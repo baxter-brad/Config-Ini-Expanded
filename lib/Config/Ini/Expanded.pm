@@ -502,7 +502,7 @@ sub expand {
 
         $changes = 0;
         if( ++$loops > $loop_limit or
-            length $value > $size_limit ) {
+            length $value > $size_limit ) {  #vi{{{{{
             my $suspect = '';
             $suspect = $1 if $value =~ /(?<!!)({VAR:[^:}\s]+}|
                 {INI:[^:}\s]+:[^:}\s]+(?::[^:}\s]+)?}|
