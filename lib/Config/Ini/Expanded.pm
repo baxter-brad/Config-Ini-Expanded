@@ -414,8 +414,14 @@ sub get {
         exists $self->[SHASH]{ $section }[NHASH]{ $name } ) {
         return unless $self->inherits();
         for my $ini ( @{$self->inherits()} ) {
-            my $try = $ini->get( $section, $name, $i );  # recurse
-            return $try if defined $try;
+            if( wantarray ) {
+                my @try = $ini->get( $section, $name, $i );  # recurse
+                return @try if @try;
+            }
+            else {
+                my $try = $ini->get( $section, $name, $i );  # recurse
+                return $try if defined $try;
+            }
         }
         return;
     }
@@ -497,7 +503,11 @@ sub expand {
         $changes = 0;
         if( ++$loops > $loop_limit or
             length $value > $size_limit ) {
-            my $msg = "Loop alert at [$section], $name:\n" .
+            my $suspect = '';
+            $suspect = $1 if $value =~ /(?<!!)({VAR:[^:}\s]+}|
+                {INI:[^:}\s]+:[^:}\s]+(?::[^:}\s]+)?}|
+                {FILE:[^:}\s]+})/x;
+            my $msg = "Loop alert at [$section], $name ($suspect):\n" .
             ((length($value) > 44) ?
             substr( $value, 0, 44 ).'...('.length($value).')...' :
             $value);
