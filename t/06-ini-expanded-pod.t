@@ -2,10 +2,51 @@
 use warnings;
 use strict;
 
-use Test::More tests => 17;
+use Test::More tests => 20;
 use Config::Ini::Expanded;
 
 # POD Examples
+
+Synopsis: {
+
+ my $out = '';
+
+ my $ini = Config::Ini::Expanded->new( string => <<'__' );
+[section_1]
+name_1_1 = value_1_1
+name_1_2 = value_1_2
+[section_2]
+name_2_1 = value_2_1
+name_2_2 = value_2_2
+__
+
+ # traverse the values
+ for my $section ( $ini->get_sections() ) {
+     $out .= "$section\n";
+ 
+     for my $name ( $ini->get_names( $section ) ) {
+         $out .= "  $name\n";
+ 
+         for my $value ( $ini->get( $section, $name ) ) {
+             $out .= "    $value\n";
+         }
+     }
+ }
+ 
+  is( $out, <<'__', "Synopsis traverse" );
+section_1
+  name_1_1
+    value_1_1
+  name_1_2
+    value_1_2
+section_2
+  name_2_1
+    value_2_1
+  name_2_2
+    value_2_2
+__
+
+}
 
 Terminology: {
 
@@ -100,6 +141,29 @@ __
         "Heredocs are supported several ways.\n" .
         "value\nvalue\nvalue\nvalue\n",
         'syntax, heredocs' );
+}
+
+Quoted_values: {
+
+    my $name;
+    my $data = <<__;
+[section]
+name = 'The ties that bind.'
+__
+ 
+    my $ini = Config::Ini::Expanded->new( string => $data );
+    $name = $ini->get( section => 'name' );
+    is( $name, "The ties that bind.", 'Quoted values: "The ties that bind."' );
+
+    $data = <<__;
+[section]
+name = 'The ''ties'' that ''bind.'''
+__
+ 
+    $ini = Config::Ini::Expanded->new( string => $data );
+    $name = $ini->get( section => 'name' );
+    is( $name, "The 'ties' that 'bind.'", q{Quoted values: "The 'ties' that 'bind.'"} );
+
 }
 
 Heredoc_chomp_join: {

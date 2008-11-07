@@ -6,10 +6,19 @@ use strict;
 use warnings;
 use Carp;
 
+=begin html
+
+ <style type="text/css">
+ @import "http://dbsdev.galib.uga.edu/sitegen/css/sitegen.css";
+ body { margin: 1em; }
+ </style>
+
+=end html
+
 =head1 NAME
 
-Config::Ini::Expanded - ini-style configuration file reading/writing
-with template expansion capabilities.
+Config::Ini::Expanded - Ini configuration file reading/writing with
+template expansion capabilities.
 
 =head1 SYNOPSIS
 
@@ -21,7 +30,7 @@ with template expansion capabilities.
  for my $section ( $ini->get_sections() ) {
      print "$section\n";
  
-     for my $name ( $ini->get_names( $section ) {
+     for my $name ( $ini->get_names( $section ) ) {
          print "  $name\n";
  
          for my $value ( $ini->get( $section, $name ) ) {
@@ -32,13 +41,13 @@ with template expansion capabilities.
 
 =head1 VERSION
 
-VERSION = 0.10
+VERSION: 1.00
 
 =cut
 
 # more POD follows the __END__
 
-our $VERSION = '0.10';
+our $VERSION = '1.00';
 
 our @ISA = qw( Config::Ini::Edit );
 use Config::Ini::Edit;
@@ -104,7 +113,6 @@ use constant VATTR => 2;
 # inherited methods
 ## new()                                    see Config::Ini
 ## $ini->get_names( $section )              see Config::Ini
-## $ini->get( $section, $name, $i )         see Config::Ini
 ## $ini->add( $section, $name, @values )    see Config::Ini
 ## $ini->set( $section, $name, $i, $value ) see Config::Ini
 ## $ini->put( $section, $name, @values )    see Config::Ini
@@ -124,10 +132,10 @@ use constant VATTR => 2;
 ## $ini->vattr( $section, $name, $i, $attribute, $value )  ::Edit
 
 #---------------------------------------------------------------------
-## $ini->init( $file )            or
-## $ini->init( file   =>$file   ) or
-## $ini->init( fh     =>$fh     ) or
-## $ini->init( string =>$string )
+## $ini->init( $file )             or
+## $ini->init( file   => $file   ) or
+## $ini->init( fh     => $fh     ) or
+## $ini->init( string => $string )
 sub init {
     my ( $self, @parms ) = @_;
 
@@ -196,7 +204,7 @@ sub init {
         }
 
         # [section]
-        if( /^\[([^\]]+)\](\s*[#;].*\s*)?/ ) {
+        if( /^\[([^\]]*)\](\s*[#;].*\s*)?/ ) {
             $section = $1;
             my $comment = $2;
             $self->_autovivify( $section );
@@ -213,8 +221,7 @@ sub init {
         # Note: name = {xyz} <<xyz>> must not be seen as a heredoc
         elsif(
             /^\s*($requoted)(\s*[=:]\s*)(<<|{)\s*([^}>]*?)\s*$/ or
-            /^\s*(.+?)(\s*[=:]\s*)(<<|{)\s*([^}>]*?)\s*$/
-            ) {
+            /^\s*(.+?)(\s*[=:]\s*)(<<|{)\s*([^}>]*?)\s*$/ ) {
             $name       = $1;
             $vattr{'equals'} = $2;
             my $style   = $3;
@@ -225,7 +232,7 @@ sub init {
             my $endtag = $style eq '{' ? '}' : '<<';
 
             ( $q, $heretag, $comment ) = ( $1, $2, $3 )
-                if $heretag =~ /^(['"])(.*)\1(\s*[#;].*)?$/;
+                if $heretag =~ /^(['"])(.*)\1(\s*[#;].*)?/;
             my $indented = ($heretag =~ s/\s*:indented\s*//i ) ? 1 : '';
             my $join     = ($heretag =~ s/\s*:join\s*//i )     ? 1 : '';
             my $chomp    = ($heretag =~ s/\s*:chomp\s*//i)     ? 1 : '';
@@ -233,7 +240,7 @@ sub init {
             $escape .= ($heretag =~ s/\s*(:html)\s*//i)  ? $1 : '';
             $escape .= ($heretag =~ s/\s*(:slash)\s*//i) ? $1 : '';
             $parse = $1   if $heretag =~ s/\s*:parse\s*\(\s*(.*?)\s*\)\s*//;
-            $parse = '\s+' if $heretag =~ s/\s*:parse\s*//;
+            $parse = '\n' if $heretag =~ s/\s*:parse\s*//;
             my $extra = '';  # strip unrecognized (future?) modifiers
             $extra .= $1 while $heretag =~ s/\s*(:\w+)\s*//;
 
@@ -364,7 +371,7 @@ sub init {
         }
 
         # to allow "{INI:general:self}" = some value
-        # or "A rose,\n\tby another name,\n" = smells
+        # or "A rose,\n\tby another name,\n" = smells as sweet
         if( $name =~ /^(['"]).*\1$/sm ) {
             $name = $quote->( $name, $1 );
         }
@@ -389,7 +396,8 @@ sub init {
         %vattr = ();
 
         if( $pending_comments ) {
-            $self->set_comments( $section, $name, $i{ $section }{ $name }, $pending_comments );
+            $self->set_comments( $section, $name,
+                $i{ $section }{ $name }, $pending_comments );
             $pending_comments = '';
         }
 
@@ -599,47 +607,82 @@ __END__
 
 =head1 DESCRIPTION
 
-This is an ini-style configuration file processor.  This class
-inherits from Config::Ini::Edit (and Config::Ini).  It uses
-those modules as well as Config::Ini::Quote, Text::ParseWords
-and JSON;
+This is an Ini configuration file processor.  This class inherits from
+Config::Ini::Edit (and Config::Ini).  It uses those modules as well as
+Config::Ini::Quote, Text::ParseWords and JSON;
 
 =head2 Terminology
+
+This document uses the terms I<comment>, I<section>, I<name>, and
+I<value> when referring to the following parts of the Ini file syntax:
 
  # comment
  [section]
  name = value
 
-In particular 'name' is the term used to refer to the
-named options within the sections.
+In particular 'name' is the term used to refer to the named options
+within the sections.  This terminology is also reflected in method
+names, like C<get_sections()> and C<get_names()>.
 
 =head2 Syntax
 
+=head3 The I<null section>
+
+At the top of an Ini file, before any sections have been explicitly
+defined, name/value pairs may be defined.  These are assumed to be in
+the 'null section', as if an explicit C<[]> line were present.
+
  # before any sections are defined,
- ; assume section eq ''--the "null section"
+ # assume section eq '', the "null section"
  name = value
  name: value
 
+This 'null section' concept allows for very simple configuration files,
+e.g.,
+
+ title = Hello World
+ color: blue
+ margin: 0
+
+=head3 Comments
+
+Comments may begin with C<'#'> or C<';'>.
+
  # comments may begin with # or ;, i.e.,
  ; semicolon is valid comment character
+
+Comments may begin on a separate line or may follow section headings.
+Comments may not follow unquoted values.
+
+ # this is a comment
+ [section] # this is a comment
+ name = value # this is NOT a comment (it is part of the value)
+
+But comments may follow quoted values.
+
+ # comments are allowed after quoted values
+ name = 'value' # this is a comment
+ name = "value" # this is a comment
+
+=head3 Assignments
+
+Spaces and tabs around the C<'='> and C<':'> assignment characters are
+stripped, i.e., they are not included in the name or value.  Use
+heredoc syntax to set a value with leading spaces.  Trailing spaces in
+values are left intact.
+
  [section]
+ 
  # spaces/tabs around '=' are stripped
  # use heredoc to give a value with leading spaces
  # trailing spaces are left intact
+ 
  name=value
  name= value
  name =value
  name = value
  name    =    value
-
- # this is a comment
- [section] # this is a comment
- name = value # this is NOT a comment
-
- # however, comments are allowed after quoted values
- name = 'value' # this is a comment
- name = "value" # this is a comment
-
+ 
  # colon is valid assignment character, too.
  name:value
  name: value
@@ -647,95 +690,102 @@ named options within the sections.
  name : value
  name    :    value
 
- # heredocs are supported several ways:
- 
- # classic heredoc
- name = <<heredoc
- value
- heredoc
+=head3 Heredocs
 
- # and because I kept doing this
+Heredoc syntax may be used to assign values that span multiple lines.
+Heredoc syntax is supported in more ways than just the classic syntax,
+as illustrated below.
+
+ # classic heredoc:
+ name = <<heredoc
+ Heredocs are supported several ways.
+ This is the "classic" syntax, using a
+ "heredoc tag" to mark the begin and end.
+ heredoc
+ 
+ # ... and the following is supported because I kept doing this
  name = <<heredoc
  value
  <<heredoc
-
- # and because who cares what it's called
+ 
+ # ... and also the following, because often no one cares what it's called
  name = <<
  value
  <<
-
- # and "block style" (for vi % support)
+ 
+ # ... and finally "block style" (for vi % support)
  name = {
  value
  }
-
- # and obscure variations, e.g.,
+ 
+ # ... and obscure variations, e.g.,
  name = {heredoc
  value
  heredoc
 
-=head2 Quoted Values
+That is, the heredoc may begin with C<< '<<' >> or C<'{'> with or
+without a tag.  And it may then end with C<< '<<' >> or C<'}'> (with or
+without a tag, as it began).  When a tag is used, the ending
+C<< '<<' >> or C<'}'> is optional.
+
+=head3 Quoted Values
 
 Values may be put in single or double quotes.
 
-Single-quoted values will be parsed literally,
-except that imbedded single quotes must be escaped
-by doubling them, e.g.,
+Single-quoted values will be parsed literally, except that imbedded
+single quotes must be escaped by doubling them, e.g.,
 
  name = 'The ties that bind.'
-
+ 
  $name = $ini->get( section => 'name' );
  # $name eq "The ties that bind."
 
  name = 'The ''ties'' that ''bind.'''
-
+ 
  $name = $ini->get( section => 'name' );
  # $name eq "The 'ties' that 'bind.'"
 
-This uses $Config::Ini::Quote::parse_single_quoted().
+This uses C<Config::Ini::Quote::parse_single_quoted()>.
 
-Double-quoted values may be parsed a couple of different
-ways.  By default, backslash-escaped unprintable characters
-will be unescaped to their actual Unicode character.  This
-includes ascii control characters like \n, \t, etc.,
-Unicode character codes like \N (Unicode next line), \P
-(Unicode paragraph separator), and hex-value escape
-sequences like \x86 and \u263A.
+Double-quoted values may be parsed a couple of different ways.  By
+default, backslash-escaped unprintable characters will be unescaped to
+their actual Unicode character.  This includes ascii control characters
+like C<\n>, C<\t>, etc., Unicode character codes like C<\N> (Unicode
+next line), C<\P> (Unicode paragraph separator), and hex-value escape
+sequences like C<\x86> and C<\u263A>.
 
-If the ':html' heredoc modifier is used (see Heredoc
-Modifiers below), then HTML entities will be decoded (using
-HTML::Entities) to their actual Unicode characters.
+If the C<':html'> heredoc modifier is used (see Heredoc Modifiers
+below), then HTML entities will be decoded (using HTML::Entities) to
+their actual Unicode characters.
 
-This uses $Config::Ini::Quote::parse_double_quoted(),
+This uses C<Config::Ini::Quote::parse_double_quoted()>.
 
-See also Config::Ini:Quote.
+See Config::Ini:Quote for more details.
 
-=head2 Heredoc Modifiers
+=head3 Heredoc :modifiers
 
-There are several ways to modify the value in a heredoc as
-the ini file is read in (i.e., as the object is
-initialized):
+There are several ways to modify the value in a heredoc as the Ini file
+is read in (i.e., as the object is initialized):
 
  :chomp    - chomps the last line
  :join     - chomps every line BUT the last one
  :indented - unindents every line (strips leading whitespace)
- :parse    - splits on newline (chomps last line)
+ :parse    - splits on newline (and chomps last line)
  :parse(regex) - splits on regex (still chomps last line)
  :slash    - unescapes backslash-escaped characters in double quotes (default)
  :html     - decodes HTML entities in double quotes
  :json     - parses javascript object notation (complex data types)
 
-The :parse modifier uses Text::ParseWords::parse_line(),
-so CSV-like parsing is possible.
+The C<':parse'> modifier uses C<Text::ParseWords::parse_line()>, so
+CSV-like parsing is possible.
 
-The :json modifier uses the JSON module to parse and dump
-complex data types (combinations of hashes, arrays, scalars).
-The value of the heredoc must be valid JavaScript Object Notation.
+The C<':json'> modifier uses the JSON module to parse and dump complex
+data types (combinations of hashes, arrays, scalars).  The value of the
+heredoc must be valid JavaScript Object Notation.
 
-The :slash and :html modifiers are only valid when double
-quotes are used (surrounding the heredoc tag and modifiers).
-If no modifiers are given with double quotes, C<:slash> is
-the default.
+The C<':slash'> and C<':html'> modifiers are only valid when double
+quotes are used (surrounding the heredoc tag and modifiers).  If no
+modifiers are given with double quotes, C<':slash'> is the default.
 
  name = <<"EOT :html"
  vis-&agrave;-vis
@@ -745,39 +795,40 @@ the default.
  \tSmiley: \u263A
  EOT
 
-Modifiers may be stacked, e.g., <<:chomp:join:indented,
-in any order (but :parse and :json are performed last).
+Modifiers may be stacked, e.g., C<< '<<:chomp:join:indented' >> (or
+C<< '<<:chomp :join :indented' >>), in any order, but note that
+C<':parse'> and C<':json'> are performed last.
 
  # value is "Line1\nLine2\n"
  name = <<
  Line1
  Line2
  <<
-
+ 
  # value is "Line1\nLine2"
  name = <<:chomp
  Line1
  Line2
  <<
-
+ 
  # value is "Line1Line2\n"
  name = <<:join
  Line1
  Line2
  <<
-
+ 
  # value is "Line1Line2"
  name = <<:chomp:join
  Line1
  Line2
  <<
-
+ 
  # value is "  Line1\n  Line2\n"
  name = <<
    Line1
    Line2
  <<
-
+ 
  # - indentations do NOT have to be regular to be unindented
  # - any leading spaces/tabs on every line will be stripped
  # - trailing spaces are left intact, as usual
@@ -786,23 +837,24 @@ in any order (but :parse and :json are performed last).
    Line1
    Line2
  <<
-
+ 
  # modifiers may have spaces between them
  # value is "Line1Line2"
  name = << :chomp :join :indented
    Line1
    Line2
  <<
-
- # with heredoc "tag"
+ 
+ # ... and should come after a heredoc "tag"
  # value is "Line1Line2"
  name = <<heredoc :chomp :join :indented
    Line1
    Line2
  heredoc
 
-The :parse modifier turns a single value into
-multiple values, e.g.,
+The C<':parse'> modifier splits a single value into multiple values.
+It may be given with a regular expression parameter to split on other
+than newline (the default).
 
  # :parse is same as :parse(\n)
  name = <<:parse
@@ -810,24 +862,24 @@ multiple values, e.g.,
  value2
  <<
 
-is the same as,
+... is the same as
 
  name = value1
  name = value2
 
-and
+... and
 
  name = <<:parse(/,\s+/)
  "Tom, Dick, and Harry", Fred and Wilma
  <<
 
-is the same as,
+... is the same as
 
  name = Tom, Dick, and Harry
  name = Fred and Wilma
 
-The :parse modifier chomps only the last line by
-default, so include '\n' to parse multiple lines.
+The C<':parse'> modifier chomps only the last line, so include C<'\n'>
+if needed.
 
  # liberal separators
  name = <<:parse([,\s\n]+)
@@ -835,7 +887,7 @@ default, so include '\n' to parse multiple lines.
  Martha George, 'Hillary and Bill'
  <<
 
-is the same as,
+... is the same as,
 
  name = Tom, Dick, and Harry
  name = Fred and Wilma
@@ -843,25 +895,29 @@ is the same as,
  name = George
  name = Hillary and Bill
 
+
+As illustrated above, the enclosing C<'/'> characters around the
+regular expression are optional.  You may also use matching quotes
+instead, e.g., C<:parse('\s')>.
+
  name = <<:json
  { a: 1, b: 2, c: 3 }
  <<
 
-Given the above :json example, $ini->get( 'name' )
-should return a hashref.  Note that we accept bare hash keys
-($JSON::BareKey = 1;).
+Given the above C<':json'> example, C<< $ini->get('name') >> should
+return a hashref.  Note that we accept bare hash keys
+(C<$JSON::BareKey=1;>).
 
-
-Modifiers must follow the heredoc characters '<<' (or '{').
-If there is a heredoc tag, e.g., EOT, the modifiers typically
+Modifiers must follow the heredoc characters C<< '<<' >> (or C<'{'>).
+If there is a heredoc tag, e.g., C<'EOT'> below, the modifiers should
 follow it, too.
 
  name = <<EOT:json
  { a: 1, b: 2, c: 3 }
  EOT
 
-If you want to use single or double quotes, surround the
-heredoc tag and modifiers with the appropriate quotes:
+If you want to use single or double quotes, surround the heredoc tag
+and modifiers with the appropriate quotes:
 
  name = <<'EOT :indented'
      line1
@@ -872,10 +928,36 @@ heredoc tag and modifiers with the appropriate quotes:
  vis-&agrave;-vis
  EOT
 
-Note, in heredocs, embedded single and double quotes do not
-have to be (and should not be) escaped.  In other words
-leave single quotes as "'" (not "''"), and leave double
-quotes as '"' (not '\"').
+If no heredoc tag is used, put the quotes around the modifiers.
+
+ name = <<":html"
+ vis-&agrave;-vis
+ <<
+
+If no modifiers either, just use empty quotes.
+
+ name = <<""
+ vis-\xE0-vis
+ <<
+
+Comments are allowed on the assignment line if quotes are used.
+
+ name = <<'EOT :indented' # this is a comment
+     line1
+     line2
+ EOT
+
+But note:
+
+ name = <<EOT
+ 'Line1' # this is NOT a comment
+ EOT
+
+=head3 Quotes in Heredocs
+
+In heredocs, embedded single and double quotes do not have to be
+(and should not be) escaped.  In other words leave single quotes as
+C<"'"> (not C<"''">), and leave double quotes as C<'"'> (not C<'\"'>).
 
  name = <<'EOT :indented'
      'line1'
@@ -892,60 +974,31 @@ quotes as '"' (not '\"').
  # $name eq qq{"vis-\xE0-vis"}
  $name = $ini->get( 'name' );
 
-If no heredoc tag is used, put the quotes around
-the modifiers.
-
- name = <<":html"
- vis-&agrave;-vis
- <<
-
-If no modifiers, just use empty quotes.
-
- name = <<""
- vis-\xE0-vis
- <<
-
-Comments are allowed on the assignment line if
-quotes are used.
-
- name = <<'EOT :indented' # this is a comment
-     line1
-     line2
- EOT
-
-But note:
-
- name = <<EOT
- 'Line1' # this is NOT a comment
- EOT
-
 =head1 GLOBAL SETTINGS
+
+The global settings below are stored in the object during C<init()>.
+So if the global settings are subsequently changed, any existing
+objects will not be affected.
 
 =over 8
 
-Note, the global settings below are stored in the
-object during init(), so if they are changed,
-any existing objects will not be affected.
-
 =item $Config::Ini::Expanded::keep_comments
 
-This boolean value will determine if comments are kept when
-an ini file is loaded during init() or when an ini object
-is written out with as_string().  The default is
-false--comments are not kept.  Rationalization: unlike the
-Config::Ini::Edit module, the "Expanded" module is
-not indented primarily to rewrite Ini files, so it is
-more likely that comments aren't needed in the object.
+This boolean value will determine if comments are kept when an Ini file
+is loaded or when an Ini object is written out using C<as_string()>.
+The default is false--comments are not kept.  The rational is this:
+Unlike the Config::Ini::Edit module, the C<Expanded> module is not
+indented primarily to rewrite Ini files, so it is more likely that
+comments aren't needed in the object.
 
 =item $Config::Ini::Expanded::heredoc_style
 
-This string can be one of '<<', '<<<<', '{', or '{}'
-(default is '<<').  This determines the default heredoc
-style when the object is written out using as_string().
-Note we said, "default heredoc style."  If a value was read
-in originally from a heredoc, it will be written out using
-that heredoc style, not this default style.  The above
-values correspond respectively to the following styles.
+This string can be one of C<< '<<' >>, C<< '<<<<' >>, C<'{'>, or
+C<'{}'> (default is C<< '<<' >>).  This determines the default heredoc
+style when the object is written out using C<as_string()>.  If a value
+was read in originally from a heredoc, it will be written out using
+that heredoc style, not this default style.  The above values
+correspond respectively to the following styles.
 
  # '<<'
  name = <<EOT
@@ -969,23 +1022,23 @@ values correspond respectively to the following styles.
 
 =item $Config::Ini::Expanded::interpolates
 
-This boolean value will determine if expansion templates in
-double quoted values will automatically be interpolated as the
-ini file is read in.  This includes expansion templates like
-C<{INI:section:name}>, C<{VAR:varname}>, and
-C<{FILE:filename}>.  The C<{INCLUDE:filename}> template will
-always be expanded, regardless, because it is at the section level,
-not the value level.
+This boolean value (default: C<true>) will determine if expansion
+templates in double quoted values will automatically be interpolated as
+the Ini file is read in.  This includes expansion templates like
+C<'{INI:section:name}'>, C<'{VAR:varname}'>, and
+C<'{FILE:file_path}'>.  The C<'{INCLUDE:file_path}'> template will
+always be expanded, regardless of the value of
+C<$Config::Ini::Expanded::interpolates>, because it is at the section
+level, not the value level.
 
-Note that "interpolation" is not the same as "expansion",
-such as when get_expanded() is called.  Interpolation
-performs a simple one-pass replacement, and expansion
-performs a loop until there are no more replacements to
-do.  It's like the difference between:
+Note that I<interpolation> is not the same as I<expansion>, such as
+when C<get_expanded()> is called.  Interpolation performs a simple
+one-pass replacement, while expansion performs a loop until there are
+no more replacements to do.  It's like the difference between ...
 
  s/{(.*)}/replace($1)/ge;  # interpolation-like
 
-and:
+and ...
 
  1 while s/{(.*)}/replace($1)/ge;  # expansion-like
 
@@ -993,43 +1046,42 @@ See more about expansion templates below.
 
 =item $Config::Ini::Expanded::expands
 
-This boolean value will determine if expansion templates in
-double quoted values will automatically be expanded as the
-ini file is read in.  This includes expansion templates like
-C<{INI:section:name}>, C<{VAR:varname}>, and
-C<{FILE:filename}>.
+This boolean value (default: C<false>) will determine if expansion
+templates in double quoted values will automatically be expanded as the
+Ini file is read in.  This includes expansion templates like
+C<'{INI:section:name}'>, C<'{VAR:varname}'>, and C<'{FILE:file_path}'>.
 
-Note that this is different from what "interpolates" does,
-because templates will be fully expanded in a loop until
-there are no more templates in the value.
+Note that this is different from what C<interpolates> does, because
+templates will be fully expanded in a loop until there are no more
+templates in the value.
 
 See more about expansion templates below.
 
 =item $Config::Ini::Expanded::inherits
 
-The value of this setting will be the null string (the
-default) to signify no inheritance, or an array reference
-pointing to an array of Config::Ini::Expanded (or
-Config::Ini::Edit or Config::Ini) objects.  If such an
-array of objects is given, and you call $ini->get(...) or
-$ini->get_var(...), and if your object ($ini) does not have a
-value for the requested parameters, Config::Ini::Expanded
-will travel through the array of other objects (in the
-order given) until a value is found.
+The value of this setting will be a null string (the default) to
+signify no inheritance, or an array reference pointing to an array of
+Config::Ini::Expanded (or Config::Ini::Edit or Config::Ini) objects.
+
+If such an array of objects is given, then inheritance can take place
+when and you call C<< $ini->get(...) >> or C<< $ini->get_var(...) >>.
+
+That is, if your object (C<$ini>) does not have a value for the
+requested parameters, Config::Ini::Expanded will travel through the
+array of other objects (in the order given) until a value is found.
 
 =item $Config::Ini::Expanded::loop_limit
 
-During an expansion, e.g., when you call get_expanded(),
-a loop is started that ends when there are no more
-expansions to do.  If this loops more than the value of
-loop_limit, the program will croak with a "Loop alert".
+During an expansion, e.g., when you call C<get_expanded()>, a loop is
+started that ends when there are no more expansions to do.  If this
+loops more than the value of C<'loop_limit'>, the program will croak
+with a I<Loop alert>.
 
-The default loop_limit is 10, which should be sufficient
-for most situations.  You can increase this limit if you
-need to have deeper nesting levels in your expansions.
+The default C<'loop_limit'> is 10, which should be sufficient for most
+situations.  You can increase this limit if you need to have deeper
+nesting levels in your expansions.
 
-Looping expansions allow for nested expansion templates
-like:
+Looping expansions allow for nested expansion templates like:
 
  {FILE:{INI:section:{VAR:myname}}}
 
@@ -1037,19 +1089,18 @@ The inner-most templates are expanded first.
 
 =item $Config::Ini::Expanded::size_limit
 
-During an expansion like described above, the value
-being expanded may grow longer.  If the length of the
-value exceeds the value of size_limit, the program will
-croak with a "Loop alert".
+During an expansion like described above, the value being expanded may
+grow longer.  If the length of the value exceeds the value of
+C<'size_limit'>, the program will croak with a I<Loop alert> (on the
+assumption that the large size is the result of a loop).
 
-The default size_limit is 1_000_000.  Increase this limit
-if you need to allow for larger values.
+The default C<'size_limit'> is 1_000_000.  Increase this limit if you
+need to allow for larger values.
 
 =item $Config::Ini::Expanded::include_root
 
-This value is the path were C<{INCLUDE:filename}> and
-C<{FILE:filename}> should begin looking when file contents
-are read in.  For example:
+This value is the path were C<'{INCLUDE:file_path}'> and
+C<'{FILE:file_path}'> will look when file contents are read in.
 
  $Config::Ini::Expanded::include_root = '/web/data';
  my $ini = $Config::Ini::Expanded( string => <<'__' );
@@ -1058,33 +1109,32 @@ are read in.  For example:
  {INCLUDE:ini/more.ini}
  __
 
-In the above example, the value of get->(section=>'name') would be
-the contents of C</web/data/stuff>, and the contents of
-C</web/data/ini/more.ini> would be pulled in and used to
-augment the ini file contents.
+In the above example, the value of C<< $ini->get(section=>'name') >>
+would be the contents of C<'/web/data/stuff'>, and the contents of
+C<'/web/data/ini/more.ini'> would be pulled in and used to augment the
+Ini file contents.
 
 =back
 
 =head1 EXPANSION TEMPLATES
 
-This module exists in order to implement
-expansion templates.  They take the following
-forms:
+The Config::Ini::Expanded module exists in order to implement expansion
+templates.  They take the following forms:
 
- {INCLUDE:inifilename}
- {INI:section:name[:i]}
+ {INCLUDE:ini_file_path}
+ {INI:section:name}
+ {INI:section:name:i}
  {VAR:varname}
- {FILE:filename}
+ {FILE:file_path}
 
 =over 8
 
-=item {INCLUDE:inifilename}
+=item {INCLUDE:ini_file_path}
 
-The C<{INCLUDE:inifilename}> template is expanded during
-init() as the ini file is read in.  This allows you to
-include ini files in other ini files.  There is no limit to
-the amount of nesting allowed other than perl's own deep
-recursion limits.
+The C<'{INCLUDE:ini_file_path}'> template is expanded during C<init()>
+as the Ini file is read in.  This allows you to include Ini files in
+other Ini files.  There is no limit to the amount of nesting allowed
+other than perl's own deep recursion limits.
 
  [section]
  name = value
@@ -1094,28 +1144,26 @@ recursion limits.
  [another_section]
  name = value
 
-The included ini file will be loaded into the object as if
-its contents existed in the main ini file where the
-template appears.  It croaks if the file cannot be opened.
-It also croaks if C<$self->include_root()> is not set or is
-set to "/", or if C<filename> contains two dots "..".
+The included Ini file will be loaded into the object as if its contents
+existed in the main Ini file where the template appears.  It croaks if
+the file cannot be opened.  It also croaks if C<< $self->include_root() >>
+is not set (or is set to C<'/'>), or if C<'ini_file_path'> contains
+two dots C<'..'>.
 
-Note that this template is never expanded inside
-double-quoted values or during calls to get_expanded() or
-get_interpolated().  It is a section-level template, not a
-value-level template.  See C<{FILE:filename}> below for
-value-level file inclusions.
+Note that this template is never expanded inside double-quoted values
+or during calls to C<get_expanded()> or C<get_interpolated()>.  It is a
+section-level template, not a value-level template.  See
+C<'{FILE:file_path}'> below for value-level file inclusions.
 
 =item {INI:section:name}
 
-=item {INI:section:name[:i]}
+=item {INI:section:name:i}
 
-The C<{INI:section:name}> template is expanded inside
-double-quoted values and when you call get_expanded() and
-get_interpolated().  It performs a call to get( section,
-name ) and replaces the template with the return value.  If
-the value is undefined, the template is replaced silently
-with a null string.
+The C<'{INI:section:name}'> template is expanded inside double-quoted
+values and when you call C<get_expanded()> and C<get_interpolated()>.
+It performs a call to C<get('section','name')> and replaces the
+template with the return value.  If the value is undefined, the
+template is replaced silently with a null string.
 
 You can provide an occurrence value (array subscript), e.g.,
 
@@ -1126,63 +1174,56 @@ You can provide an occurrence value (array subscript), e.g.,
 
 =item {VAR:varname}
 
-The C<{VAR:varname}> template is expanded inside
-double-quoted values and when you call get_expanded() and
-get_interpolated().  It performs a call to get_var( varname
-) and replaces the template with the return value.  If the
-value is undefined, the template is replaced silently with
-a null string.
+The C<'{VAR:varname}'> template is expanded inside double-quoted values
+and when you call C<get_expanded()> and C<get_interpolated()>.  It
+performs a call to C<get_var('varname')> and replaces the template
+with the return value.  If the value is undefined, the template is
+replaced silently with a null string.
 
  [letter]
  greeting = Hello {VAR:username}, today is {VAR:today}.
  ...
-
+ 
  $greeting = $ini->get_expanded( letter => 'greeting' );
 
+=item {FILE:file_path}
 
-=item {FILE:filename}
-
-The C<{FILE:filename}> template is expanded inside
-double-quoted values and when you call get_expanded() and
-get_interpolated().  It replaces the template with the
-contents of include_root/filename.  It croaks if the file
-cannot be opened.  It also croaks if C<$self->include_root()>
-is not set or is set to "/", or if C<filename> contains
-two dots "..".
+The C<'{FILE:file_path}'> template is expanded inside double-quoted
+values and when you call C<get_expanded()> and C<get_interpolated()>.
+It replaces the template with the contents of
+C<'include_root/file_path'>.  It croaks if the file cannot be opened.
+It also croaks if C<< $self->include_root() >> is not set (or is set to
+C<'/'>), or if C<'file_path'> contains two dots C<'..'>.
 
  [website]
  homepage = {FILE:homepage.html}
  ...
-
+ 
  print $ini->get_expanded( website => 'homepage' );
 
 =item Postponed Expansion/Interpolation
 
-Expansion and interpolation can be "postponed" for
-value-level expansion templates by placing an exclamation
-point (or "bang" or "not" symbol) just before the opening
-brace of an expansion template, e.g.,
+Expansion and interpolation can be I<postponed> for value-level
+expansion templates by placing an exclamation point (or 'bang' or 'not'
+symbol) just before the opening brace of an expansion template, e.g.,
 
  !{INI:section:name}
  !{VAR:varname}
- !{FILE:filename}
+ !{FILE:file_path}
 
-This feature allows you to use expansion templates to
-create other expansion templates that will be expanded
-later (by your own program or another program).  Depending
-on your needs, you may postpone multiple times with multiple
-bangs, e.g.,
+This feature allows you to use expansion templates to create other
+expansion templates that will be expanded later (by your own program or
+another program).  Depending on your needs, you may postpone multiple
+times with multiple bangs, e.g.,
 
  !!{INI:section:name}
 
-Each exclamation point will postpone the expansion one more
-time.
+Each exclamation point will postpone the expansion one more time.
 
-Note that these postponements happen inside expand() and
-interpolate().  Since the {INCLUDE:inifilename} template is
-expanded in init(), is not a value-level template, and does
-not have the postponement feature, its expansion cannot be
-postponed.
+Note that these postponements happen inside C<expand()> and
+C<interpolate()>.  Since the C<'{INCLUDE:ini_file_path}'> template is
+expanded in C<init()>, it is not a value-level template and does not
+have the postponement feature; its expansion cannot be postponed.
 
 =back
 
@@ -1202,46 +1243,53 @@ postponed.
 
 =item new( string => $string )
 
-=item new( file => 'filename', keep_comments => 0 )
+=item new( string => $string, file => 'filename' )
+
+=item new( fh => $filehandle, file => 'filename' )
+
+=item new( file => 'filename', keep_comments => 1 )
 
 =item new( file => 'filename', heredoc_style => '{}' ), etc.
 
-Use new() to create an object, e.g.,
+Use C<new()> to create an object, e.g.,
 
-  my $ini = Config::Ini::Expanded->new( 'inifile' );
+ my $ini = Config::Ini::Expanded->new( 'inifile' );
 
-If you pass any parameters, the init() object will be called.
-If you pass only one parameter, it's assumed to be the ini file
-name.  Otherwise, use the named parameters, C<file>, C<fh>,
-or C<string> to pass a filename, filehandle (already open),
-or string.  The string is assumed to look like the contents
-of an ini file.
+If you pass any parameters, the C<init()> method will be called.  If
+you pass only one parameter, it's assumed to be the file name.
+Otherwise, use the named parameters, C<'file'>, C<'fh'>, or C<'string'>
+to pass a filename, filehandle (already open), or string.  The string
+is assumed to look like the contents of an Ini file.
 
-Other parameters are
+The parameter, C<'fh'> takes precedent over C<'string'> which takes
+precedent over C<'file'>.  You may pass C<< file => 'filename' >> with
+the other parameters to set the C<'file'> attribute.
 
-C<keep_comments> to override the default: false.
+Other parameters are:
 
-C<heredoc_style> to override the default: '<<'.
-     The values accepted for heredoc_style are
-     '<<', '<<<<', '{', or '{}'.
+C<'keep_comments'> to override the default: false.
 
-C<interpolates> to override the default: 1.
+C<'heredoc_style'> to override the default: C<< '<<' >>.
+The values accepted for heredoc_style are C<< '<<' >>, C<< '<<<<' >>,
+C<'{'>, or C<'{}'>.
 
-C<expands> to override the default: 0.
+C<'interpolates'> to override the default: 1.
 
-C<inherits> to override the default: ''.
+C<'expands'> to override the default: 0.
 
-C<loop_limit> to override the default: 10.
+C<'inherits'> to override the default: '' (no inheritance).
 
-C<size_limit> to override the default: 1_000_000.
+C<'loop_limit> to override the default: 10.
 
-C<include_root> to override the default: ''.
+C<'size_limit'> to override the default: 1_000_000.
 
+C<'include_root'> to override the default: '' (inclusions not
+allowed).
 
 Also see GLOBAL SETTINGS above.
 
-If you do not pass any parameters to new(), you can later
-call init() with the same parameters described above.
+If you do not pass any parameters to C<new()>, you can later call
+C<init()> with the same parameters described above.
 
 =item init( 'filename' )
 
@@ -1251,7 +1299,11 @@ call init() with the same parameters described above.
 
 =item init( string => $string )
 
-=item init( file => 'filename', keep_comments => 0 )
+=item init( string => $string, file => 'filename' )
+
+=item init( fh => $filehandle, file => 'filename' )
+
+=item init( file => 'filename', keep_comments => 1 )
 
 =item init( file => 'filename', heredoc_style => '{}' ), etc.
 
@@ -1266,15 +1318,15 @@ call init() with the same parameters described above.
 
 =item get_sections()
 
-Use get_sections() to retrieve a list of the sections in the
-ini file.  They are returned in the order they appear in the
-file.
+Use C<get_sections()> to retrieve a list of the sections in the Ini
+file.  They are returned in the order they appear in the file.
 
  my @sections = $ini->get_sections();
 
-If there is a "null section", it will be the first in the
-list.  If a section appears twice in a file, it only appears
-once in this list.  This implies that ...
+If there is a 'null section', it will be the first in the list.
+
+If a section appears twice in a file, it only appears once in this
+list.  This implies that ...
 
  [section1]
  name1 = value
@@ -1294,34 +1346,39 @@ is the same as ...
  [section2]
  name2 = value
 
-The method, as_string(), will output the latter.
+The C<as_string()> method will output the latter.
 
 =item get_names( $section )
 
-Use get_names() to retrieve a list of the names in a given
-section.
+Use C<get_names()> to retrieve a list of the names in a given section.
 
  my @names = $ini->get_names( $section );
 
-They are returned in the order they appear in the
-section.
+They are returned in the order they appear in the section.
 
-If a name appears twice in a section, it only
-appears once in this list.  This implies that ...
+If a name appears twice in a section, it only appears once in this
+list.  This implies that ...
 
  [section]
  name1 = value1
  name2 = value2
  name1 = another
 
-is the same as
+is the same as ...
 
  [section]
  name1 = value1
  name1 = another
  name2 = value2
 
-The method, as_string(), will output the latter.
+The C<as_string()> method will output the latter.
+
+Calling C<get_names()> without a parameter is the same as calling it
+with a null string: it retrieves the names from the 'null section'.
+The two lines below are equivalent.
+
+ @names = $ini->get_names();
+ @names = $ini->get_names( '' );
 
 =item get( $section, $name )
 
@@ -1329,41 +1386,33 @@ The method, as_string(), will output the latter.
 
 =item get( $name )  (assumes $section eq '')
 
-Use get() to retrieve the value(s) for a given name.
-If a name appears more than once in a section, the
-values are pushed onto an array, and get() will return
-this array of values.
+Use C<get()> to retrieve the value or values for a given name.
+
+Note: when an Ini object is initialized, if a name appears more than
+once in a section, the values are pushed onto an array, and C<get()>
+will return this array of values.
 
  my @values = $ini->get( $section, $name );
 
-Pass an array subscript as the third parameter to
-return only one of the values in this array.
+Pass an array subscript as the third parameter to return only one of
+the values in this array.
 
- my $value = $ini->get( $section, $name, 0 ); # get first one
- my $value = $ini->get( $section, $name, 1 ); # get second one
+ my $value = $ini->get( $section, $name, 0 );  # get first one
+ my $value = $ini->get( $section, $name, 1 );  # get second one
  my $value = $ini->get( $section, $name, -1 ); # get last one
 
-If the ini file lists names at the beginning, before
-any sections are given, the section name is assumed to
-be the null string ('').  If you call get() with just
-one parameter, it is assumed to be a name in this "null
-section".  If you want to pass an array subscript, then
-you must also pass a null string as the first parameter.
+If the Ini file lists names at the beginning, before any sections are
+given, the section name is assumed to be a null string (C<''>).  If you
+call C<get()> with just one parameter, it is assumed to be a name in
+this 'null section'.  If you want to pass an array subscript, then you
+must also pass a null string as the first parameter.
 
  my @values = $ini->get( $name );         # assumes $section eq ''
  my $value  = $ini->get( '', $name, 0 );  # get first occurrence
  my $value  = $ini->get( '', $name, -1 ); # get last occurrence
 
-This "null section" concept allows for very simple
-configuration files like:
-
- title = Hello World
- color: blue
- margin: 0
-
-If the section and name are not found, get() will inherit
-from any inherited objects, and if still not found will
-return no value.
+If the section and name are not found, C<get()> will inherit from any
+inherited objects, and if still not found will return no value.
 
 =item get_interpolated( $section, $name )
 
@@ -1371,42 +1420,47 @@ return no value.
 
 =item get_interpolated( $name )  (assumes $section eq '')
 
-Use get_interpolated() to retrieve the value(s) for a given name
-just as you would use get() (see above).  However, the value
-will be interpolated and then returned.
+Use C<get_interpolated()> to retrieve the value or values for a given
+name just as you would use C<get()> (see above).  But unlike with
+C<get()>, the value will be interpolated and then returned.
 
  $value = $ini->get_interpolated( $section, $name );
 
 The following expansion templates may be interpolated:
 
-C<{INI:section:name}>
-C<{INI:section:name:i}>
-Expands by calling get( section, name or get( section, name, i ).
+ {INI:section:name}
+ {INI:section:name:i}
 
-C<{VAR:varname}>
-Expands by calling get_var( varname ).  See get_var() below.
+It expands these by calling C<get('section','name')> or
+C<get('section','name',i)> and C<interpolate()>.
 
-C<{FILE:filename}>
-Expands by reading in the contents of include_root/filename.
+ {VAR:varname}
+
+It expands this by calling C<get_var('varname')> and C<interpolate()>.
+See C<get_var()> below.
+
+ {FILE:file_path}
+
+It expands this by reading in the contents of
+C<'include_root/file_path'>.
 
 If expansion templates are nested, e.g.,
 
  {FILE:{INI:section:{VAR:varname}}}
 
 only the inner-most templates will be expanded, because
-get_interpolated() will only do one pass through the value.
+C<get_interpolated()> will only do one pass through the value.
 
-If any template resolves to an undefined value, it will
-be replaced with a null string.
+If any template resolves to an undefined value, it will be replaced
+with a null string.
 
 =item interpolate( $value )
 
-Use interpolate() to interpolate a value that may contain
-expansion templates. The interpolated value is returned.
-Typically you would not call interpolate(), but would
-instead call get_interpolated(), which itself calls
-interpolate().  But it is a supported method for those
-times when, for example, you might want to get() an
+Use C<interpolate()> to interpolate a value that may contain expansion
+templates. The interpolated value is returned.  Typically you would not
+call C<interpolate()>, but would instead call C<get_interpolated()>,
+which itself calls C<interpolate()>.  But it is a supported method for
+those times when, for example, you might want to C<get()> an
 uninterpolated value and expand it later.
 
  $value = $ini->get( $section, $name );
@@ -1419,23 +1473,29 @@ uninterpolated value and expand it later.
 
 =item get_expanded( $name )  (assumes $section eq '')
 
-Use get_expanded() to retrieve the value(s) for a given name
-just as you would use get() (see above).  However, the value
-will be expanded and then returned.
+Use C<get_expanded()> to retrieve the value or values for a given name
+just as you would use C<get()> (see above).  But unlike with C<get()>,
+the value will be expanded and then returned.
 
  $value = $ini->get_expanded( $section, $name );
 
 The following expansion templates may be expanded:
 
-C<{INI:section:name}>
-C<{INI:section:name:i}>
-Expands by calling get( section, name or get( section, name, i ).
+ {INI:section:name}
+ {INI:section:name:i}
 
-C<{VAR:varname}>
-Expands by calling get_var( varname ).  See get_var() below.
+It expands these by calling C<get('section','name')> or
+C<get('section','name',i)> and C<expand()>.
 
-C<{FILE:filename}>
-Expands by reading in the contents of include_root/filename.
+ {VAR:varname}
+
+It expands this by calling C<get_var('varname')> and C<expand()>.  See
+C<get_var()> below.
+
+ {FILE:file_path}
+
+It expands this by reading in the contents of
+C<'include_root/file_path'>.
 
 Expansion templates may be nested, e.g.,
 
@@ -1443,101 +1503,94 @@ Expansion templates may be nested, e.g.,
 
 The inner-most templates are expanded first.
 
-If any template resolves to an undefined value, it will
-be replaced with a null string.
+If any template resolves to an undefined value, it will be replaced
+with a null string.
 
-If there is a "Loop alert" condition (e.g., the number of
-expansion loops exceeds loop_limit, or the size of the
-value being expanded exceeds size_limit), get_expanded()
-(actually expand()) will croak.
+If there is a I<Loop alert> condition (e.g., the number of expansion
+loops exceeds C<'loop_limit'>, or the size of the value being expanded
+exceeds C<'size_limit'>), C<get_expanded()> (actually C<expand()>) will
+croak.
 
 =item expand( $value )
 
-Use expand() to expand a value that may contain expansion
-templates. The expanded value is returned.  Typically you
-would not call expand(), but would instead call
-get_expanded(), which itself calls expand().  But it is a
-supported method for those times when, for example, you
-might want to get() an unexpanded value and expand it
-later.
+Use C<expand()> to expand a value that may contain expansion templates.
+The expanded value is returned.  Typically you would not call
+C<expand()>, but would instead call C<get_expanded()>, which itself
+calls C<expand()>.  But it is a supported method for those times when,
+for example, you might want to C<get()> an unexpanded value and expand
+it later.
 
  $value = $ini->get( $section, $name );
  ...
  $value = $ini->expand( $value );
 
-If there is a "Loop alert" condition (e.g., the number of
-expansion loops exceeds loop_limit, or the size of the
-value being expanded exceeds size_limit), expand() will
-croak.
+If there is a I<Loop alert> condition (e.g., the number of expansion
+loops exceeds C<'loop_limit'>, or the size of the value being expanded
+exceeds C<'size_limit'>), C<expand()> will croak.
 
 =back
 
 =head2 Add/Set/Put Methods
 
-Here, 'add' implies pushing values onto the end,
-'set', modifying a single value, and 'put', replacing
-all values at once.
+Here, I<add> denotes pushing values onto the end, I<set>, modifying a
+single value, and I<put>, replacing all values at once.
 
 =over 8
 
 =item add( $section, $name, @values )
 
-Use add() to add to the value(s) of an option.  If
-the option already has values, the new values will
-be added to the end (pushed onto the array).
+Use C<add()> to add to the value or values of an option.  If the option
+already has values, the new values will be added to the end (pushed
+onto the array).
 
  $ini->add( $section, $name, @values );
 
-To add to the "null section", pass a null string.
+To add to the 'null section', pass a null string.
 
  $ini->add( '', $name, @values );
 
 =item set( $section, $name, $i, $value )
 
-Use set() to assign a single value.  Pass undef to
-remove a value altogether.  The $i parameter is the
-subscript of the values array to assign to (or remove).
+Use C<set()> to assign a single value.  Pass C<undef> to remove a value
+altogether.  The C<$i> parameter is the subscript of the values array to
+assign to (or remove).
 
  $ini->set( $section, $name, -1, $value ); # set last value
- $ini->set( $section, $name, 0, undef ); # remove first value
+ $ini->set( $section, $name, 0, undef );   # remove first value
 
-To set a value in the "null section", pass a null
-string.
+To set a value in the 'null section', pass a null string.
 
  $ini->set( '', $name, 1, $value ); # set second value
 
 =item put( $section, $name, @values )
 
-Use put() to assign all values at once.  Any
-existing values are overwritten.
+Use C<put()> to assign all values at once.  Any existing values are
+overwritten.
 
  $ini->put( $section, $name, @values );
 
-To put values in the "null section", pass a null
-string.
+To put values in the 'null section', pass a null string.
 
  $ini->put( '', $name, @values );
 
-=item set_var( $varname, $value )
+=item set_var( 'varname', $value )
 
-Use set_var() to assign a value to a "varname".  This
-value will be substituted into any expansion templates
-of the form, C<{VAR:varname}>.
+Use C<set_var()> to assign a value to a C<'varname'>.  This value will
+be substituted into any expansion templates of the form,
+C<'{VAR:varname}'>.
 
  $ini->set_var( 'today', scalar localtime );
 
 =item get_var( $varname )
 
-Use get_var() to retrieve the value of a varname.  This
-method is called by get_expanded(), get_interpolated(),
-expand(), and interpolate() to expand templates
-of the form, C<{VAR:varname}>.
+Use C<get_var()> to retrieve the value of a varname.  This method is
+called by C<get_expanded()>, C<get_interpolated()>, C<expand()>, and
+C<interpolate()> to expand templates of the form, C<'{VAR:varname}'>.
 
  $today = $ini->get_var( 'today' );
 
-If the $varname is not found, get_var() will inherit
-from any inherited objects, and if still not found will
-return no value.
+If the C<$varname> is not found, C<get_var()> will inherit from any
+inherited objects, and if still not found will return no value.
 
 =back
 
@@ -1547,35 +1600,35 @@ return no value.
 
 =item delete_section( $section )
 
-Use delete_section() to delete an entire section,
-including all of its options and their values.
+Use C<delete_section()> to delete an entire section, including all of
+its options and their values.
 
  $ini->delete_section( $section )
 
-To delete the "null section", don't
-pass any parameters (or pass a null string).
+To delete the 'null section', don't pass any parameters or pass a null
+string.
 
  $ini->delete_section();
  $ini->delete_section( '' );
 
 =item delete_name( $section, $name )
 
-Use delete_name() to delete a named option and all
-of its values from a section.
+Use C<delete_name()> to delete a named option and all of its values
+from a section.
 
  $ini->delete_name( $section, $name );
 
-To delete an option from the "null section",
-pass just the name, or pass a null string.
+To delete an option from the 'null section', pass just the name, or
+pass a null string.
 
  $ini->delete_name( $name );
  $ini->delete_name( '', $name );
 
-To delete just some of the values, you can use set() with a
-subscript, passing undef to delete that one, or you can
-first get them using get(), then modify them (e.g., delete
-some).  Finally, use put() to replace the old values with
-the modified ones.
+To delete just some of the values, you can use C<set()> with a
+subscript, passing C<undef> to delete each one.  Or you can first get them
+into an array using C<get()>, modify them in that array (e.g., delete
+some), and then use C<put()> to replace the old values with the
+modified ones.
 
 =back
 
@@ -1585,125 +1638,120 @@ the modified ones.
 
 =item file( $filename )
 
-Use file() to get or set the name of the object's
-ini file.  Pass the file name to set the value.
-Pass undef to remove the C<file> attribute altogether.
+Use C<file()> to get or set the name of the object's Ini file.  Pass the
+file name to set the value.  Pass C<undef> to remove the C<'file'> attribute
+altogether.
 
  $inifile_name = $ini->file();  # get
- $ini->file( $inifile_name );  # set
- $ini->file( undef );  # remove
+ $ini->file( $inifile_name );   # set
+ $ini->file( undef );           # remove
 
 =item keep_comments( $boolean )
 
-Use keep_comments() to get or set the object's C<keep_comments>
-attribute.  The default for this attribute is true, i.e.,
-do keep comments.  Pass a false value to turn comments off.
+Use C<keep_comments()> to get or set the object's C<'keep_comments'>
+attribute.  The default for this attribute is false, i.e., do not keep
+comments.  Pass a true value to turn comments on.
 
  $boolean = $ini->keep_comments();  # get
- $ini->keep_comments( $boolean );  # set
+ $ini->keep_comments( $boolean );   # set
 
-Note that keep_comments() accesses the value of the flag
-that is stored in the object--not the value of the global
-setting.
+C<keep_comments()> accesses the value of the flag that is stored in the
+object--not the value of the global setting.
 
 =item heredoc_style( $style )
 
-Use heredoc_style() to get or set the default style
-used when heredocs are rendered by as_string().
+Use C<heredoc_style()> to get or set the default style used when
+heredocs are rendered by C<as_string()>.
 
  $style = $ini->heredoc_style();  # get
- $ini->heredoc_style( $style );  # set
+ $ini->heredoc_style( $style );   # set
 
-The value passed should be one of '<<', '<<<<',
-'{', or '{}'.  The default is '<<'.
+The value passed should be one of C<< '<<' >>, C<< '<<<<' >>, C<'{'>,
+or C<'{}'>.  The default is C<< '<<' >>.
 
-Note that heredoc_style() accesses the value of the style
-that is stored in the object--not the value of the global
-setting.
+C<heredoc_style()> accesses the value of the style that is stored in
+the object--not the value of the global setting.
 
 =item interpolates( 1 )
 
-Use interpolates() to get or set the interpolates flag.  This
-boolean value will determine if expansion templates in
-double quoted values will automatically be interpolated as
-the ini file is read in.  Also see
-$Config::Ini::Expanded::interpolates for more details.
+Use C<interpolates()> to get or set the C<'interpolates'> flag.  This
+boolean value will determine if expansion templates in double quoted
+values will automatically be interpolated as the Ini file is read in.
+Also see C<$Config::Ini::Expanded::interpolates> for more details.
 
-Note that interpolates() accesses the value of the flag
-that is stored in the object--not the value of the global
-setting.
+C<interpolates()> accesses the value of the flag that is stored in the
+object--not the value of the global setting.
 
 =item expands( 0 )
 
-Use expands() to get or set the expands flag.  This
-boolean value will determine if expansion templates in
-double quoted values will automatically be expanded as
-the ini file is read in.  Also see
-$Config::Ini::Expanded::expands for more details.
+Use C<expands()> to get or set the C<'expands'> flag.  This boolean
+value will determine if expansion templates in double quoted values
+will automatically be expanded as the Ini file is read in.  Also see
+C<$Config::Ini::Expanded::expands> for more details.
 
-Note that expands() accesses the value of the flag
-that is stored in the object--not the value of the global
-setting.
+C<expands()> accesses the value of the flag that is stored in the
+object--not the value of the global setting.
 
 =item inherits( [$ini_obj1, $ini_obj2, ... ] )
 
-Use inherits() to get or set the inherits attribute.
-The value should be a null string to disable inheritance,
-or an array reference (like the anonymous array shown
-above).  It must be an array reference even if there
-is only one object to inherit from, e.g.,
+Use C<inherits()> to get or set the C<'inherits'> attribute.  The value
+should be a null string to disable inheritance, or an array reference,
+like the anonymous array shown above.  This array should contain a list
+of Ini objects (Config::Ini, Config::Ini::Edit, or
+Config::Ini::Expanded).
+
+It must be an array reference even if there is only one object to
+inherit from, e.g.,
 
  $ini->inherits( [$ini_obj] );
 
-Also see $Config::Ini::Expanded::inherits for more details.
+Also see C<$Config::Ini::Expanded::inherits> for more details.
 
-Note: DON'T inherit from yourself.  If you do, you will
-get a deep recursion error if you call get() or get_var()
-and trigger inheritance.  Note also that inheriting from
-yourself can happen if you inherit from an object that
-inherits from you.
+Note: B<don't> inherit from yourself.  If you do, you will get a deep
+recursion error if you call C<get()> or C<get_var()> and trigger
+inheritance.  Note also that inheriting from yourself can happen if you
+inherit from an object that inherits from you.
 
-Note that inherits() accesses the value of the attribute
-that is stored in the object--not the value of the global
-setting.
+C<inherits()> accesses the value of the attribute that is stored in the
+object--not the value of the global setting.
 
 =item loop_limit( 10 )
 
-Use loop_limit() to get or set the limit value.  If an
-expansion loops more than the value of loop_limit, the
-program will croak with a "Loop alert".  Also see
-$Config::Ini::Expanded::loop_limit above for more details.
+Use C<loop_limit()> to get or set the C<'loop_limit'> value.  If an
+expansion loops more than the value of C<'loop_limit'>, the program
+will croak with a I<Loop alert>.  Also see
+C<$Config::Ini::Expanded::loop_limit> above for more details.
 
-Note that loop_limit() accesses the limit value that is
-stored in the object--not the value of the global setting.
+C<loop_limit()> accesses the limit value that is stored in the
+object--not the value of the global setting.
 
 =item size_limit( 1_000_000 )
 
-Use size_limit() to get or set the limit value.  If the
-length of an expanded value exceeds the value of
-size_limit, the program will croak with a "Loop alert".
-Also see $Config::Ini::Expanded::size_limit above for
-more details
+Use C<size_limit()> to get or set the C<'size_limit'> value.  If the
+length of an expanded value exceeds the value of C<'size_limit'>, the
+program will croak with a I<Loop alert>.  Also see
+C<$Config::Ini::Expanded::size_limit> above for more details.
 
-Note that size_limit() accesses the limit value that is
-stored in the object--not the value of the global setting.
+C<size_limit()> accesses the limit value that is stored in the
+object--not the value of the global setting.
 
 =item include_root( $path )
 
-Use include_root() to get or set the include_root value.
-This value is the path were C<{INCLUDE:filename}> and
-C<{FILE:filename}> should begin looking when file contents
-are read in.  Also see $Config::Ini::Expanded::include_root
-for more details.
+Use C<include_root()> to get or set the C<'include_root'> value.  This
+value is the path were C<'{INCLUDE:file_path}'> and
+C<'{FILE:file_path}'> will begin looking when file contents are read
+in.  Also see C<$Config::Ini::Expanded::include_root> for more
+details.
 
-Note that include_root() accesses the value of the path
+When a C<'{INCLUDE:file_path}'> or C<'{FILE:file_path}'> template is
+expanded, it will croak if C<'include_root'> is not set (or is set to
+"/"), or if C<'file_path'> contains two dots "..".
+
+C<include_root()> accesses the value of the path
 that is stored in the object--not the value of the global
-setting.  When a C<{INCLUDE:filename}> or
-C<{FILE:filename}> template is expanded, it will croak if
-C<$self->include_root()> is not set or is set to "/", or if
-C<filename> contains two dots "..".
+setting.
 
-See also init() and GLOBAL SETTINGS above.
+See also C<init()> and GLOBAL SETTINGS above.
 
 =item vattr( $section, $name, $i, $attribute, $value, ... )
 
@@ -1720,51 +1768,48 @@ which include:
  json      : boolean
  comment   : 'string'
 
-If $i is undefined, 0 is assumed.  If there's
-an $attribute, but no $value, the value of that
-attribute is returned.
+If C<$i> is undefined, C<0> is assumed.  If there's an C<$attribute>,
+but no C<$value>, the value of that attribute is returned.
 
  $value = $ini->vattr( $section, $name, 0, 'heretag' );  # get one
 
-If no $attribute is given, vattr() returns all of the
-attribute names and values as a list (in pairs).
+If no C<$attribute> is given, C<vattr()> returns all of the attribute
+names and values as a list (in pairs).
 
  %attrs = $ini->vattr( $section, $name, 1 ); # get all
 
-If $attribute is a hashref, values are set from that hash.
+If C<$attribute> is a hashref, values are set from that hash.
 
  $ini->vattr( $section, $name, 1, { heretag=>'EOT', herestyle=>'{}' } );
 
-Otherwise, attributes and values may be passed as
-named parameters.
+Otherwise, attributes and values may be passed as named parameters.
 
  $ini->vattr( $section, $name, 1, heretag=>'EOT', herestyle=>'{}' );
 
-These value attributes are used to replicate the ini
-file when as_string() is called.
+These value attributes are used to replicate the ini file when
+C<as_string()> is called.
 
-C<escape>, C<indented>, and C<json> correspond to those
-heredoc modifiers; see C<Heredoc Modifiers> above.
-C<heretag>, C<herestyle>, and C<quote> are used to begin
-and end the heredoc.  Additionally, if double quotes are
-called for, characters in the value will be escaped
-according to the C<escape> modifier.
+The attributes C<'escape'>, C<'indented'>, and C<'json'> correspond to
+the similarly named heredoc modifiers; see C<Heredoc Modifiers> above.
+The values of C<'heretag'>, C<'herestyle'>, and C<'quote'> are used to
+begin and end the heredoc.  Additionally, if double quotes are called
+for, characters in the value will be escaped according to the
+C<'escape'> value.
 
-C<comment> will be appended after the value, or if a
-heredoc, after the beginning of the heredoc.  Note, the
-comment may also be accessed using set_comment() and
-get_comment().  See Comments Accessor Methods below.
+The value of C<'comment'> will be appended after the value, or if a
+heredoc, after the beginning of the heredoc.  Note that the comment may
+also be accessed using C<set_comment()> and C<get_comment()>.  See
+Comments Accessor Methods below.
 
-The value of C<equals> will be output between the name
-and value, e.g., ' = ' between "name = value".  C<nquote>
-is to the name what C<quote> is to the value, i.e., if
-"'", the name will be single quoted, if '"', double.
+The value of C<'equals'> will be output between the name and value,
+e.g., C<' = '> in C<'name = value'>.  The setting, C<'nquote'>, is to
+the name what C<'quote'> is to the value, i.e., if C<"'">, the name
+will be single quoted, if C<'"'>, double quoted.
 
-Note that replicating the ":parse" heredoc modifier is
-not supported, so if a file containing a ":parse"
-modifier is read and then rewritten using as_string(),
-the values will be written in their parsed form, and
-may not be a heredoc any more. E.g.,
+Note that replicating the ":parse" heredoc modifier is not supported,
+so if a file containing a ":parse" modifier is read and then rewritten
+using C<as_string()>, the values will be written in their parsed form, and
+may not be a heredoc any more. For example:
 
  [section]
  name = <<:parse
@@ -1778,108 +1823,100 @@ would be written by as_string() like this:
  name = one
  name = two
 
-
 =back
 
 =head2 Comments Accessor Methods
 
-An ini file may contain comments.  Normally, when your
-program reads an ini file, it doesn't care about comments.
-In Config::Ini::Expanded, keep_comments is false by default.
+An Ini file may contain comments.  Normally, when your program reads an
+Ini file, it doesn't care about comments.  In Config::Ini::Expanded,
+keep_comments is false by default.
 
-Set $Config::Ini::Expanded::keep_comments to 1 if you do
-want the Config::Ini::Expanded object to retain the comments
-that are in the file.  The default is 0--comments are
-not kept.  This applies to new(), init(), and as_string(),
-i.e., if the value is 1, new() and init() will load the
-comments into the object, and as_string() will output these
+Set C<$Config::Ini::Edit::keep_comments = 1;> if you go want the
+Config::Ini::Edit object to retain the comments that are in the file.
+The default is C<0>--comments are not kept.  This applies to C<new()>,
+C<init()>, and C<as_string()>, i.e., C<new()> and C<init()> will load
+the comments into the object, and C<as_string()> will output these
 comments.
 
-Or you can pass the C<keep_comments> parameter
-to the new() or init() methods as described above.
+Or you can pass the C<'keep_comments'> parameter to the C<new()> or
+C<init()> methods as described above.
 
 =over 8
 
 =item get_comments( $section, $name, $i )
 
-Use get_comments() to return the comments that appear ABOVE
-a certain name.  Since names may be repeated (forming an
-array of values), pass an array index ($i) to identify the
-comment desired.  If $i is undefined, 0 is assumed.
+Use C<get_comments()> to return the comments that appear B<above> a
+certain name.  Since names may be repeated (forming an array of
+values), pass an array index (C<$i>) to identify the comment desired.
+If C<$i> is undefined, C<0> is assumed.
 
  my $comments = $ini->get_comments( $section, $name );
 
 =item get_comment( $section, $name, $i )
 
-Use get_comment() (singular) to return the comment that
-appears ON the same line as a certain name's assignment.
-Pass an array index ($i) to identify the comment desired.
-If $i is undefined, 0 is assumed.
+Use C<get_comment()> (singular) to return the comments that appear
+B<on> the same line as a certain name's assignment.  Pass an array
+index (C<$i>) to identify the comment desired.  If C<$i> is undefined,
+C<0> is assumed.
 
  $comment = $ini->get_comment( $section, $name );
 
 =item set_comments( $section, $name, $i, @comments )
 
-Use set_comments() to specify comments for a given
-occurrence of a name.  When as_string() is called,
-these comments will appear ABOVE the name.
+Use C<set_comments()> to specify comments for a given occurrence of a
+name.  When C<as_string()> is called, these comments will appear
+B<above> the name.
 
   $ini->set_comments( $section, $name, 0, 'Hello World' );
 
-In an ini file, comments must begin with '#' or ';' and end
-with a newline.  If your comments don't, '# ' and "\n" will
-be added.
+In an Ini file, comments must begin with C<'#'> or C<';'> and end with
+a newline.  If your comments don't, C<'# '> and C<"\n"> will be added.
 
 =item set_comment( $section, $name, $i, @comments )
 
-Use set_comment() to specify comments for a given
-occurrence of a name.  When as_string() is called, these
-comments will appear ON the same line as the name's
-assignment.
+Use C<set_comment()> to specify comments for a given occurrence of a
+name.  When C<as_string()> is called, these comments will appear B<on>
+the same line as the name's assignment.
 
   $ini->set_comment( $section, $name, 0, 'Hello World' );
 
-In an ini file, comments must begin with '#' or ';'.  If
-your comments don't, '# ' will be added.  If you pass an
-array of comments, they will be strung together on one
-line.
+In an Ini file, comments must begin with C<'#'> or C<';'>.  If your
+comments don't, C<'# '> will be added.  If you pass an array of
+comments, they will be strung together on one line.
 
 =item get_section_comments( $section )
 
-Use get_section_comments() to retrieve the comments
-that appear ABOVE the [section] line, e.g.,
+Use C<get_section_comments()> to retrieve the comments that appear B<above>
+the C<[section]> line, e.g.,
 
  # Comment 1
  [section] # Comment 2
 
+ # $comments eq "# Comment 1\n"
  my $comments = $ini->get_section_comments( $section );
-
-In the above example, $comments eq "# Comment 1\n";
 
 =item get_section_comment( $section )
 
-Use get_section_comment() (note: singular 'comment') to
-retrieve the comment that appears ON the same line as
-the [section] line.
+Use C<get_section_comment()> (note: singular 'comment') to retrieve the
+comment that appears B<on> the same line as the C<[section]> line.
 
  # Comment 1
  [section] # Comment 2
 
+ # $comment eq " # Comment 2\n"
  my $comment = $ini->get_section_comment( $section );
-
-In the above example, $comment eq " # Comment 2\n";
 
 =item set_section_comments( $section, @comments )
 
-Use set_section_comments() to set the value of the
-comments above the [section] line.
+Use C<set_section_comments()> to set the value of the comments above
+the C<[section]> line.
 
  $ini->set_section_comments( $section, $comments );
 
 =item set_section_comment( $section, @comments )
 
-Use set_section_comment() to set the value of the
-comment at the end of the [section] line.
+Use C<set_section_comment()> (singular) to set the value of the comment
+at the end of the C<[section]> line.
 
  $ini->set_section_comment( $section, $comment );
 
@@ -1891,31 +1928,29 @@ comment at the end of the [section] line.
 
 =item as_string()
 
-Use as_string() to dump the Config::Ini::Expanded object in an ini file
-format.  If $Config::Ini::Expanded::keep_comments is true, the comments
-will be included.
+Use C<as_string()> to dump the Config::Ini::Expanded object in an Ini
+file format.  If C<$Config::Ini::Edit::keep_comments> is true, the
+comments will be included.
 
  print INIFILE $ini->as_string();
 
-The value that as_string() returns is not guaranteed to be
-exactly what was in the original ini file.  But you can
-expect the following:
+The value C<as_string()> returns is not guaranteed to be exactly what
+was in the original Ini file.  But you can expect the following:
 
 - All sections and names will be retained.
 
-- All values will resolve correctly, i.e., a call to
-get() will return the expected value.
+- All values will resolve correctly, i.e., a call to C<get()> will
+return the expected value.
 
-- All comments will be present (if keep_comments is true).
+- All comments will be present (if C<'keep_comments'> is true).
 
-- As many value attributes as possible will be retained, e.g.,
-quotes, escapes, indents, etc.  But the :parse modifier will
-NOT be retained.
+- As many value attributes as possible will be retained, e.g., quotes,
+escapes, indents, etc.  But the C<':parse'> modifier will B<not> be
+retained.
 
-- If the same section appears multiple times in a file,
-all of its options will be output in only one occurrence
-of that section, in the position of the original first
-occurrence.  E.g.,
+- If the same section appears multiple times in a file, all of its
+options will be output in only one occurrence of that section, in the
+position of the original first occurrence.  E.g.,
 
  [section1]
  name1 = value
@@ -1924,7 +1959,7 @@ occurrence.  E.g.,
  [section1]
  name3 = value
 
-will be output as,
+will be output as
 
  [section1]
  name1 = value
@@ -1933,19 +1968,19 @@ will be output as,
  [section2]
  name2 = value
 
-(Note that as_string() inserts a blank line between sections
-if there is not a comment there.)
+(Note that as_string() inserts a blank line between sections if there
+is not a comment there.)
 
-- If the same name appears multiple times in a section,
-all of its occurrences will be grouped together, at the
-same position as the first occurrence.  E.g.,
+- If the same name appears multiple times in a section, all of its
+occurrences will be grouped together, at the same position as the first
+occurrence.  E.g.,
 
  [section]
  name1 = value1
  name2 = value2
  name1 = another
 
-will be output as,
+will be output as
 
  [section]
  name1 = value1
@@ -1968,7 +2003,7 @@ Brad Baxter, E<lt>bmb@mail.libs.uga.eduE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006 by Brad Baxter
+Copyright (C) 2008 by Brad Baxter
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.7 or,
