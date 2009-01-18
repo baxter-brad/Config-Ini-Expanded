@@ -6,6 +6,8 @@ use strict;
 use warnings;
 use Carp;
 
+#---------------------------------------------------------------------
+
 =begin html
 
  <style type="text/css">
@@ -41,13 +43,15 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.00
+VERSION: 1.01
 
 =cut
 
 # more POD follows the __END__
 
-our $VERSION = '1.00';
+#---------------------------------------------------------------------
+
+our $VERSION = '1.01';
 
 our @ISA = qw( Config::Ini::Edit );
 use Config::Ini::Edit;
@@ -63,8 +67,10 @@ our $heredoc_style = '<<';  # for as_string()
 our $interpolates  = 1;     # double-quote interpolations
 our $expands       = 0;     # double-quote expansions
 our $include_root  = '';    # for INCLUDE/FILE expansions
-our $inherits      = '';    # to inherit from other configs
-our $loop_limit    = 10;
+our $inherits      = '';    # for inheriting from other configs
+our $no_inherit    = '';    # '' means will inherit anything
+our $no_override   = '';    # '' means can override anything
+our $loop_limit    = 10;    # limits for detecting loops
 our $size_limit    = 1_000_000;
 
 use constant SECTIONS => 0;
@@ -77,6 +83,7 @@ use constant SCMTS  => 2;
 use constant VALS  => 0;
 use constant CMTS  => 1;
 use constant VATTR => 2;
+
 # VATTR: {
 #     quote     => [',"],
 #     nquote    => [',"],
@@ -88,7 +95,7 @@ use constant VATTR => 2;
 #     indented  => indented value
 #     json      => ':json',
 # }
-
+#
 # object structure summary:
 #           [
 # SECTIONS:     [ 'section1', ],
@@ -149,10 +156,12 @@ sub init {
     $string   = $parms{'string'};
     $included = $parms{'included'};
 
+    # see AUTOLOAD() for (almost) parallel list of attributes
     for( qw(
-        keep_comments heredoc_style interpolates
-        include_root  inherits      loop_limit
-        size_limit    expands
+        interpolates expands
+        inherits no_inherit no_override
+        include_root keep_comments heredoc_style
+        loop_limit size_limit
         ) ) {
         no strict 'refs';
         $self->_attr( $_ =>
@@ -160,6 +169,8 @@ sub init {
     }
     $self->_attr( file => $file ) if $file;
 
+    my $inherits      = $self->inherits();
+    my $no_override   = $self->no_override();
     my $keep_comments = $self->keep_comments();
     my $interpolates  = $self->interpolates();
     my $expands       = $self->expands();
@@ -344,6 +355,15 @@ sub init {
             $value = 1;
         }
 
+        if( $inherits and $no_override ) {
+            if( $no_override->{ $section }{ $name } ) {
+                # possible future feature ...
+                # croak "Section:$section/Name:$name may not be overridden"
+                #     if $Config::Ini::Expanded::die_on_override;
+                next;
+            }
+        }
+
         my $quote = sub {
             my( $v, $q, $escape ) = @_;
             if( $q eq "'" ) { return &parse_single_quoted }
@@ -421,6 +441,9 @@ sub get {
         exists $self->[SHASH]{ $section } and
         exists $self->[SHASH]{ $section }[NHASH]{ $name } ) {
         return unless $self->inherits();
+        if( my $no_inherit = $self->no_inherit() ) {
+            return if $no_inherit->{ $section }{ $name };
+        }
         for my $ini ( @{$self->inherits()} ) {
             if( wantarray ) {
                 my @try = $ini->get( $section, $name, $i );  # recurse
@@ -445,6 +468,7 @@ sub get_var {
     my ( $self, $var ) = @_;
     unless( defined $self->[VAR] and defined $self->[VAR]{$var} ) {
         return unless $self->inherits();
+        # note that no_inherit does not apply here ...
         for my $ini ( @{$self->inherits()} ) {
             my $try = $ini->get_var( $var );  # recurse
             return $try if defined $try;
@@ -579,21 +603,29 @@ sub _readfile {
 #---------------------------------------------------------------------
 ## AUTOLOAD() (wrapper for _attr())
 ## file( $filename )
-## keep_comments( 0 )
-## heredoc_style( '<<' )
 ## interpolates( 1 )
 ## expands( 1 )
+## inherits( [$ini_obj1,$ini_obj2,...] )
+## no_inherit(  { section1=>{name1=>1,name2=>1}, s2=>{n3=>1}, ... } )
+## no_override( { section1=>{name1=>1,name2=>1}, s2=>{n3=>1}, ... } )
 ## include_root( $include_root )
+## keep_comments( 0 )
+## heredoc_style( '<<' )
 ## loop_limit( 10 )
 ## size_limit( 1_000_000 )
 our $AUTOLOAD;
 sub AUTOLOAD {
     my $attribute = $AUTOLOAD;
     $attribute =~ s/.*:://;
+
+    # see init() for (almost) parallel list of attributes
     die "Undefined: $attribute()" unless $attribute =~ /^(?:
-        file | keep_comments | heredoc_style | interpolates |
-        include_root | inherits | loop_limit | size_limit | expands
+        file | interpolates | expands |
+        inherits | no_inherit | no_override |
+        include_root | keep_comments | heredoc_style |
+        loop_limit | size_limit
         )$/x;
+
     my $self = shift;
     $self->_attr( $attribute, @_ );
 }
@@ -1064,11 +1096,47 @@ signify no inheritance, or an array reference pointing to an array of
 Config::Ini::Expanded (or Config::Ini::Edit or Config::Ini) objects.
 
 If such an array of objects is given, then inheritance can take place
-when and you call C<< $ini->get(...) >> or C<< $ini->get_var(...) >>.
+when you call C<< $ini->get(...) >> or C<< $ini->get_var(...) >>.
 
 That is, if your object (C<$ini>) does not have a value for the
 requested parameters, Config::Ini::Expanded will travel through the
 array of other objects (in the order given) until a value is found.
+
+=item $Config::Ini::Expanded::no_inherit
+
+The value of this setting will be a null string (the default) to
+signify that anything may be inherited, or a reference to a hash of
+hashes specifying section/name combinations that should not be
+inherited, e.g.,
+
+ $Config::Ini::Expanded::no_inherit = { section => { name1 => 1, name2 => 1 } };
+
+Note the true (C<1>) values for the names.
+
+With the above example in force, when a program calls, e.g.,
+C<$ini->get( section, 'name1' );> and gets no value from the C<$ini>
+object, it will B<not> inherit from any object in the C<inherits>
+list.
+
+Note that the C<no_inherit> attribute does not affect inheritance that
+may take place when a program calls C<$ini->get_var()>.
+
+=item $Config::Ini::Expanded::no_override
+
+The value of this setting will be a null string (the default) to
+signify that any inherited values may be overridden, or a reference to
+a hash of hashes specifying section/name combinations that may not be
+overridden, e.g.,
+
+ $Config::Ini::Expanded::no_override = { section => { name1 => 1, name2 => 1 } };
+
+Note the true (C<1>) values for the names.
+
+With the above example in force, if an Ini object's C<inherits>
+attribute is true, the module will not allow C<section/name1> or
+C<section/name2> to be set during the C<init()> of that object.  That
+is, those section/name combinations may not be overridden in an ini
+file (on the assumption that they will be set in an inherited object).
 
 =item $Config::Ini::Expanded::loop_limit
 

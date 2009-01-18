@@ -6,8 +6,7 @@ use Test::More tests => 28;
 
 use Config::Ini::Expanded;
 
-my $data = do{ local $/; <DATA> };
-
+# set up ini1 for ini2 to inherit from
 my $ini1 = Config::Ini::Expanded->new( string => <<_end_ );
 [section]
 name1 = value1(ini1)
@@ -21,6 +20,7 @@ $ini1->set_var(
     var3 => 'var3(ini1)',
     );
 
+# set up ini2 to inherit from ini1
 my $ini2 = Config::Ini::Expanded->new(
     inherits => [$ini1],
     string => <<_end_ );
@@ -32,6 +32,7 @@ $ini2->set_var(
     var2 => 'var2(ini2)',
     );
 
+# set up ini3 to inherit from ini2 (and so also from ini1)
 my $ini3 = Config::Ini::Expanded->new(
     inherits => [$ini2],
     string => <<_end_ );
@@ -43,6 +44,8 @@ $ini3->set_var(
     var3 => 'var3(ini3)',
     );
 
+# set up ini4 to inherit from ini2 and ini1
+# XXX need to ask why ini1 is explicit here ...
 my $ini4 = Config::Ini::Expanded->new(
     inherits => [$ini2,$ini1],
     string => <<_end_ );
@@ -54,6 +57,8 @@ $ini4->set_var(
     var4 => 'var4(ini4)',
     );
 
+# set up ini5 to inherit from all the others
+# XXX need to ask why the explicit listing (since inheriting is recursive)
 my $ini5 = Config::Ini::Expanded->new(
     inherits => [$ini4,$ini3,$ini2,$ini1],
     string => <<_end_ );
