@@ -597,7 +597,7 @@ sub _readfile {
             $file =~ m,\.\.,;
     $file =~ s,^/+,,;
     $file = "$include_root/$file";
-    open my $fh, $file or croak "Can't open $file: $!";
+    open my $fh, "<:encoding($Encoding)", $file or croak "Can't open $file: $!";
     local $/;
     return <$fh>;
 }
@@ -2083,7 +2083,7 @@ Brad Baxter, E<lt>bmb@mail.libs.uga.eduE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2008 by Brad Baxter
+Copyright (C) 2009 by Brad Baxter
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.7 or,
