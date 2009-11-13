@@ -12,6 +12,8 @@ t/07-ini-expanded-indent.t
 t/08-ini-expanded-null-section.t
 t/09-ini-expanded-altchars.t
 t/10-ini-expanded-json.t
+t/11-ini-expanded-autoviv.t
+t/12-ini-expanded-encoding.t
 t/101-ini-expanded-new-init.t
 t/102-ini-expanded-get.t
 t/103-ini-expanded-get_sections.t
@@ -33,6 +35,8 @@ t/212-ini-expanded-accessors.t
 t/213-ini-expanded-inherits.t
 t/214-ini-expanded-include.t
 t/215-ini-expanded-expands.t
+t/216-ini-expanded-no_inherit.t
+t/217-ini-expanded-no_override.t
 t/301-ini-expanded-quote.t
 t/302-ini-expanded-oddities.t
 lib/Config/Ini/Expanded.pm

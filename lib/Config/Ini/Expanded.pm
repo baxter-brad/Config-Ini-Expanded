@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.01
+VERSION: 1.02
 
 =cut
 
@@ -51,7 +51,7 @@ VERSION: 1.01
 
 #---------------------------------------------------------------------
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 our @ISA = qw( Config::Ini::Edit );
 use Config::Ini::Edit;
@@ -115,6 +115,8 @@ use constant VATTR => 2;
 # ATTRS:        { ... },
 # VAR:          { ... },
 #           ],
+
+our $Encoding = 'utf8';
 
 #---------------------------------------------------------------------
 # inherited methods
@@ -180,10 +182,10 @@ sub init {
 
     unless( $fh ) {
         if( $string ) {
-            open $fh, '<', \$string
+            open $fh, "<:encoding($Encoding)", \$string
                 or croak "Can't open string: $!"; }
         elsif( $file ) {
-            open $fh, '<', $file
+            open $fh, "<:encoding($Encoding)", $file
                 or croak "Can't open $file: $!"; }
         else { croak "Invalid parms" }
     }
@@ -1358,6 +1360,16 @@ Also see GLOBAL SETTINGS above.
 
 If you do not pass any parameters to C<new()>, you can later call
 C<init()> with the same parameters described above.
+
+By default, if you give a filename or string, the module will open it
+using ":encoding(utf8)".  You can change this by setting
+$Config::Ini::Expanded::Encoding, e.g.,
+
+ $Config::Ini::Expanded::Encoding = "iso-8859-1";
+ my $ini = Config::Ini::Expanded->new( file => 'filename' );
+
+Alternatively, you may open the file yourself using the desired
+encoding and send the filehandle to new() (or init());
 
 =item init( 'filename' )
 

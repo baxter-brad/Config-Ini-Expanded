@@ -1,5 +1,12 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.02 Fri Nov 13 16:11:11 EST 2009
+    - add $Config::Ini::Expanded::Encoding and t/12-ini-expanded-encoding.t
+
+1.01 Sun Jan 18 10:49:01 -0500 2009)
+    - add no_inherit attribute
+    - add no_override attribute
+
 1.00  Fri Nov  7 15:15:39 EST 2008
     - bug fixes, pod copyedited, more tests, added to svn repository
 
