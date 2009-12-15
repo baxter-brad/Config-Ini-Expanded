@@ -43,15 +43,17 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.02
+VERSION: 1.03
 
 =cut
 
 # more POD follows the __END__
 
 #---------------------------------------------------------------------
+# http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
+$VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
 use Config::Ini::Edit;
@@ -77,6 +79,7 @@ use constant SECTIONS => 0;
 use constant SHASH    => 1;
 use constant ATTRS    => 2;
 use constant VAR      => 3;
+use constant LOOP     => 4;
 use constant NAMES  => 0;
 use constant NHASH  => 1;
 use constant SCMTS  => 2;
@@ -114,9 +117,11 @@ use constant VATTR => 2;
 #               },
 # ATTRS:        { ... },
 # VAR:          { ... },
+# LOOP:         { ... },
 #           ],
 
 our $Encoding = 'utf8';
+my $Var_rx = qr/[^:}\s]+/;
 
 #---------------------------------------------------------------------
 # inherited methods
@@ -328,7 +333,7 @@ sub init {
                 $ini->get_sections();
             foreach my $section ( @sections ) {
                 foreach my $name ( $ini->get_names( $section ) ) {
-                    $self->add( $section, $name, 
+                    $self->add( $section, $name,
                         $ini->get( $section, $name ) );
                 }
             }
@@ -506,6 +511,47 @@ sub set_var {
 }
 
 #---------------------------------------------------------------------
+## $ini->get_loop( $loop )
+sub get_loop {
+    my ( $self, $loop ) = @_;
+    unless( defined $self->[LOOP] and defined $self->[LOOP]{$loop} ) {
+        return unless $self->inherits();
+        # note that no_inherit does not apply here ...
+        for my $ini ( @{$self->inherits()} ) {
+            my $try = $ini->get_loop( $loop );  # recurse
+            return $try if defined $try;
+        }
+        return;
+    }
+    return $self->[LOOP]{$loop};
+}
+
+#---------------------------------------------------------------------
+## $ini->set_loop( $loop, $value, ... )
+sub set_loop {
+    my ( $self, @loops ) = @_;
+    return unless @loops;
+    if( @loops == 1 ) {
+        if( not defined $loops[0] ) {
+            delete $self->[LOOP];
+        }
+        elsif( ref $loops[0] eq 'HASH' ) {
+            my $href = $loops[0];
+            $self->[LOOP]{ $_ } = $href->{ $_ } for keys %$href;
+        }
+        else {
+            croak "set_loop(): Odd number of parms.";
+        }
+        return;
+    }
+    croak "set_loop(): Odd number of parms." if @loops % 2;
+    while( @loops ) {
+        my $key = shift @loops;
+        $self->[LOOP]{$key} = shift @loops;
+    }
+}
+
+#---------------------------------------------------------------------
 ## $ini->get_expanded( $section, $name, $i )
 sub get_expanded {
     my ( $self, $section, $name, $i ) = @_;
@@ -519,42 +565,133 @@ sub get_expanded {
 
 #---------------------------------------------------------------------
 ## $ini->expand( $value, $section, $name )
+
 sub expand {
     my ( $self, $value, $section, $name ) = @_;
     my $changes;
     my $loops;
-    while( 1 ) {  #vi{{{{{
+    while( 1 ) {
         no warnings 'uninitialized';
         $changes += $value =~
-            s/(?<!!){VAR:([^:}\s]+)}/$self->get_var($1)/ge;
+            s/ (?<!!) { VAR: ($Var_rx) }
+             /$self->get_var( $1 )/gex;
         $changes += $value =~
-            s/(?<!!){INI:([^:}\s]+):([^:}\s]+)(?::([^:}\s]+))?}/$self->get(
-            $1,$2,$3)/ge;
+            s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
+             /$self->get( $1, $2, $3 )/gex;
         $changes += $value =~
-            s/(?<!!){FILE:([^:}\s]+)}/$self->_readfile($1)/ge;
+            s/ (?<!!) { FILE: ($Var_rx) }
+             /$self->_readfile( $1 )/gex;
+        $changes += $value =~
+            s/ (?<!!) { LOOP: ($Var_rx) } (.*) { END_LOOP: \1 }
+             /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/gexs;
         last unless $changes;
 
         $changes = 0;
         if( ++$loops > $loop_limit or
-            length $value > $size_limit ) {  #vi{{{{{
+            length $value > $size_limit ) {
             my $suspect = '';
-            $suspect = $1 if $value =~ /(?<!!)({VAR:[^:}\s]+}|
-                {INI:[^:}\s]+:[^:}\s]+(?::[^:}\s]+)?}|
-                {FILE:[^:}\s]+})/x;
-            my $msg = "Loop alert at [$section], $name ($suspect):\n" .
-            ((length($value) > 44) ?
-            substr( $value, 0, 44 ).'...('.length($value).')...' :
-            $value);
+            $suspect = " ($1)" if $value =~ /(?<!!)(
+                { VAR:   $Var_rx                            } |
+                { INI:   $Var_rx : $Var_rx (?: : $Var_rx )? } |
+                { FILE:  $Var_rx                            } |
+                { LOOP: ($Var_rx) } .* { END_LOOP: \2 }
+                )/xs;
+            my $msg = "expand(): Loop alert at [$section]=>$name$suspect:\n" .
+                ( ( length($value) > 44 )                            ?
+                substr( $value, 0, 44 ).'...('.length($value).')...' :
+                $value );
             croak $msg;
         }
     }  # while
 
-    for( $value ) {  #vi{{{{{
-        s/!({VAR:[^:}\s]+})/$1/g;
-        s/!({INI:[^:}\s]+:[^:}\s]+(?::([^:}\s]+))?})/$1/g;
-        s/!({FILE:[^:}\s]+})/$1/g;
+    # undo postponements
+    # Note, this is outside the above while loop, because otherwise
+    # there's no point, i.e., there would be no postponements.
+
+    for( $value ) {
+        s/ !( { VAR:   $Var_rx                            } ) /$1/gx;
+        s/ !( { INI:   $Var_rx : $Var_rx (?: : $Var_rx )? } ) /$1/gx;
+        s/ !( { FILE:  $Var_rx                            } ) /$1/gx;
+        s/ !( { LOOP: ($Var_rx) } .* { END_LOOP: \2 }       ) /$1/gxs;
+        s/ !( { LVAR:  $Var_rx                            } ) /$1/gx;
     }
+
     return $value;
+}
+
+#---------------------------------------------------------------------
+## $ini->_expand_loop( $keys, $value, $loop_aref )
+
+# Note: because of the current code logic, if you want to postpone
+#       a loop that is in another loop, you must *also* postpone *all*
+#        of the inner loop's lvar's, e.g.,
+#       {LOOP:out} !{LOOP:in} !{LVAR:in} {END_LOOP:in} {END_LOOP:out}
+# XXX   This needs closer inspection to see if there's a better way
+#       that's worth the trouble for a rarely used (?) feature
+
+# Note: $loop_hrefs is an array of parent hashes.  These allow a
+#       LOOP or LVAR to refer to an ancestor loop.
+
+sub _expand_loop {
+    my ( $self, $value, $name, $loop_aref, $loop_hrefs ) = @_;
+
+    return unless defined $loop_aref;
+
+    #  -or-  (XXX maybe an option?)
+    # croak "For {LOOP:$name}, loop is not defined: $name => [?]"
+    #     unless defined $loop_aref;
+
+    croak join ' ' =>
+        "Error: for {LOOP:$name}, '$loop_aref' is not",
+        "an array ref: $name => '$loop_aref'"
+        unless ref $loop_aref eq 'ARRAY';
+
+    $loop_hrefs ||= [];  # i.e., an array of hrefs
+
+    # look for the loop in the current href, its parents,
+    # or the $ini object
+    my $find_loop = sub {
+        my( $name, $href ) = @_;
+        for ( $href, @$loop_hrefs ) {
+            for ( $_->{ $name } ) {
+                return $_ if defined and ref eq 'ARRAY' }
+        }
+        $self->get_loop( $name );
+    };
+
+    # look for the lvar in the current href or its parents
+    my $find_lvar = sub {
+        my( $name, $href ) = @_;
+        for ( $href, @$loop_hrefs ) {
+            for ( $_->{ $name } ) { return $_ if defined }
+        }
+        return;
+    };
+
+    my @ret;
+    for my $loop_href ( @{$loop_aref} ) {
+
+        croak join ' ' =>
+            "Error: for {LOOP:$name}, '$loop_href' is not",
+            "a hash ref: $name => [ '$loop_href' ]"
+            unless ref $loop_href eq 'HASH';
+
+        my $tval = $value; 
+        for( $tval ) {
+            no warnings 'uninitialized';
+            s/{ LOOP: ($Var_rx) } (.*) { END_LOOP: \1 }
+             /$self->_expand_loop(
+                 $2,                              # $value
+                 $1,                              # $name
+                 $find_loop->( $1, $loop_href ),  # $loop_aref
+                 [ $loop_href, @$loop_hrefs ]     # $loop_hrefs
+                 )/gexs;
+            s/ (?<!!) { LVAR: ($Var_rx) }
+             /$find_lvar->( $1, $loop_href )/gex;
+        }
+        push @ret, $tval;
+    }
+    return join '' => @ret;
 }
 
 #---------------------------------------------------------------------
@@ -573,15 +710,22 @@ sub get_interpolated {
 sub interpolate {
     my( $self, $value ) = @_;
     for ( $value ) {
-        no warnings 'uninitialized';  #vi{{{{{{{{{{
-        s/(?<!!){VAR:([^:}\s]+)}/$self->get_var($1)/ge;
-        s/(?<!!){INI:([^:}\s]+):([^:}\s]+)(?::([^:}\s]+))?}/$self->get(
-        $1,$2,$3)/ge;
-        s/(?<!!){FILE:([^:}\s]+)}/$self->_readfile($1)/ge;
+        no warnings 'uninitialized';
+        s/ (?<!!) { VAR: ($Var_rx) }
+         /$self->get_var( $1 )/gex;
+        s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
+         /$self->get( $1, $2, $3 )/gex;
+        s/ (?<!!) { FILE: ($Var_rx) }
+         /$self->_readfile( $1 )/gex;
+        s/ (?<!!) { LOOP: ($Var_rx) } (.*) { END_LOOP: \1 }
+         /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/gexs;
 
-        s/!({VAR:[^:}\s]+})/$1/g;
-        s/!({INI:[^:}\s]+:[^:}\s]+(?::([^:}\s]+))?})/$1/g;
-        s/!({FILE:[^:}\s]+})/$1/g;
+        # undo postponements
+        s/ !( { VAR:   $Var_rx                            } ) /$1/gx;
+        s/ !( { INI:   $Var_rx : $Var_rx (?: : $Var_rx )? } ) /$1/gx;
+        s/ !( { FILE:  $Var_rx                            } ) /$1/gx;
+        s/ !( { LOOP: ($Var_rx) } .* { END_LOOP: \2 }       ) /$1/gxs;
+        s/ !( { LVAR:  $Var_rx                            } ) /$1/gx;
     }
     return $value;
 }

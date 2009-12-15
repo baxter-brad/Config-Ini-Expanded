@@ -24,6 +24,7 @@ Autoviv_get: {
     $try    = $ini1->get_interpolated( bad => 'bad' );
     $try    = $ini1->get_expanded(     bad => 'bad' );
     $try    = $ini1->get_var(                 'bad' );
+    $try    = $ini1->get_loop(                'bad' );
     $try    = $ini1->get_comments(     bad => 'bad' );
     $try    = $ini1->get_comment(      bad => 'bad' );
     $try    = $ini1->get_section_comments(    'bad' );
