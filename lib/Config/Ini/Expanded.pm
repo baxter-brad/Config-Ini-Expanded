@@ -64,16 +64,19 @@ $JSON::Pretty  = 1;
 $JSON::BareKey = 1;  # *accepts* bare keys
 $JSON::KeySort = 1;
 
-our $keep_comments = 0;     # boolean, user may set to 1
-our $heredoc_style = '<<';  # for as_string()
-our $interpolates  = 1;     # double-quote interpolations
-our $expands       = 0;     # double-quote expansions
-our $include_root  = '';    # for INCLUDE/FILE expansions
-our $inherits      = '';    # for inheriting from other configs
-our $no_inherit    = '';    # '' means will inherit anything
-our $no_override   = '';    # '' means can override anything
-our $loop_limit    = 10;    # limits for detecting loops
+our $encoding      = 'utf8';  # for new()/init(), {FILE:...}
+our $keep_comments = 0;       # boolean, user may set to 1
+our $heredoc_style = '<<';    # for as_string()
+our $interpolates  = 1;       # double-quote interpolations
+our $expands       = 0;       # double-quote expansions
+our $include_root  = '';      # for INCLUDE/FILE expansions
+our $inherits      = '';      # for inheriting from other configs
+our $no_inherit    = '';      # '' means will inherit anything
+our $no_override   = '';      # '' means can override anything
+our $loop_limit    = 10;      # limits for detecting loops
 our $size_limit    = 1_000_000;
+
+my $Var_rx = qr/[^:}\s]+/;    # ... in {VAR:...}, {FILE:...}, etc.
 
 use constant SECTIONS => 0;
 use constant SHASH    => 1;
@@ -120,9 +123,6 @@ use constant VATTR => 2;
 # LOOP:         { ... },
 #           ],
 
-our $Encoding = 'utf8';
-my $Var_rx = qr/[^:}\s]+/;
-
 #---------------------------------------------------------------------
 # inherited methods
 ## new()                                    see Config::Ini
@@ -168,9 +168,9 @@ sub init {
         interpolates expands
         inherits no_inherit no_override
         include_root keep_comments heredoc_style
-        loop_limit size_limit
+        loop_limit size_limit encoding
         ) ) {
-        no strict 'refs';
+        no strict 'refs';  # so "$$_" will get above values
         $self->_attr( $_ =>
             (defined $parms{ $_ }) ? $parms{ $_ } : $$_ );
     }
@@ -182,15 +182,16 @@ sub init {
     my $interpolates  = $self->interpolates();
     my $expands       = $self->expands();
     my $include_root  = $self->include_root();
+    my $encoding      = $self->encoding();
     $self->include_root( $include_root )
-        if $include_root =~ s,/+$,,;
+        if $include_root =~ s'/+$'';
 
     unless( $fh ) {
         if( $string ) {
-            open $fh, "<:encoding($Encoding)", \$string
+            open $fh, "<:encoding($encoding)", \$string
                 or croak "Can't open string: $!"; }
         elsif( $file ) {
-            open $fh, "<:encoding($Encoding)", $file
+            open $fh, "<:encoding($encoding)", $file
                 or croak "Can't open $file: $!"; }
         else { croak "Invalid parms" }
     }
@@ -321,7 +322,7 @@ sub init {
                 if !$include_root or
                     $include_root =~ m,^/+$, or
                     $file =~ m,\.\.,;
-            $file =~ s,^/+,,;
+            $file =~ s'^/+'';
             $file = "$include_root/$file";
             next if $included->{ $file }++;
             my $ini = Config::Ini::Expanded->new(
@@ -566,12 +567,40 @@ sub get_expanded {
 #---------------------------------------------------------------------
 ## $ini->expand( $value, $section, $name )
 
+# todo: if and first
+
 sub expand {
     my ( $self, $value, $section, $name ) = @_;
     my $changes;
     my $loops;
     while( 1 ) {
         no warnings 'uninitialized';
+
+        $changes += $value =~
+            s/ (?<!!) { IF_VAR: ($Var_rx) }
+                (.*?) (?: {ELSE} (.*) )? { END_IF_VAR: \1 }
+             /$self->get_var( $1 )? $2: $3/gexs;
+        $changes += $value =~
+            s/ (?<!!) { UNLESS_VAR: ($Var_rx) }
+                (.*?) (?: {ELSE} (.*) )? { END_UNLESS_VAR: \1 }
+             /$self->get_var( $1 )? $3: $2/gexs;
+        $changes += $value =~
+            s/ (?<!!) { IF_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
+                (.*?) (?: {ELSE} (.*) )? { END_IF_INI: \1 }
+             /$self->get( $1, $2, $3 )? $4: $5/gexs;
+        $changes += $value =~
+            s/ (?<!!) { UNLESS_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
+                (.*?) (?: {ELSE} (.*) )? { END_UNLESS_INI: \1 }
+             /$self->get( $1, $2, $3 )? $5: $4/gexs;
+        $changes += $value =~
+            s/ (?<!!) { IF_LOOP: ($Var_rx) }
+                (.*?) (?: {ELSE} (.*) )? { END_IF_LOOP: \1 }
+             /$self->get_loop( $1 )? $2: $3/gexs;
+        $changes += $value =~
+            s/ (?<!!) { UNLESS_LOOP: ($Var_rx) }
+                (.*?) (?: {ELSE} (.*) )? { END_UNLESS_LOOP: \1 }
+             /$self->get_loop( $1 )? $3: $2/gexs;
+
         $changes += $value =~
             s/ (?<!!) { VAR: ($Var_rx) }
              /$self->get_var( $1 )/gex;
@@ -584,6 +613,7 @@ sub expand {
         $changes += $value =~
             s/ (?<!!) { LOOP: ($Var_rx) } (.*) { END_LOOP: \1 }
              /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/gexs;
+
         last unless $changes;
 
         $changes = 0;
@@ -624,20 +654,23 @@ sub expand {
 
 # Note: because of the current code logic, if you want to postpone
 #       a loop that is in another loop, you must *also* postpone *all*
-#        of the inner loop's lvar's, e.g.,
+#       of the inner loop's lvar's, e.g.,
 #       {LOOP:out} !{LOOP:in} !{LVAR:in} {END_LOOP:in} {END_LOOP:out}
 # XXX   This needs closer inspection to see if there's a better way
-#       that's worth the trouble for a rarely used (?) feature
+#       that's worth the trouble for a rarely used (?) feature.
+#       (After more thought, I believe that the current situation is
+#       probably okay.  But still thinking ...)
 
 # Note: $loop_hrefs is an array of parent hashes.  These allow a
-#       LOOP or LVAR to refer to an ancestor loop.
+#       LOOP or LVAR to refer to an ancestor loop, i.e., to
+#       inherit values contextually.
 
 sub _expand_loop {
     my ( $self, $value, $name, $loop_aref, $loop_hrefs ) = @_;
 
     return unless defined $loop_aref;
 
-    #  -or-  (XXX maybe an option?)
+    #  -or-  (XXX maybe an option later?)
     # croak "For {LOOP:$name}, loop is not defined: $name => [?]"
     #     unless defined $loop_aref;
 
@@ -668,6 +701,7 @@ sub _expand_loop {
         return;
     };
 
+    # here's the meat
     my @ret;
     for my $loop_href ( @{$loop_aref} ) {
 
@@ -686,6 +720,12 @@ sub _expand_loop {
                  $find_loop->( $1, $loop_href ),  # $loop_aref
                  [ $loop_href, @$loop_hrefs ]     # $loop_hrefs
                  )/gexs;
+            s/ (?<!!) { IF_LVAR: ($Var_rx) }
+                (.*?) (?: {ELSE} (.*) )? { END_IF_LVAR: \1 }
+             /$find_lvar->( $1, $loop_href )? $2: $3/gexs;
+            s/ (?<!!) { UNLESS_LVAR: ($Var_rx) }
+                (.*?) (?: {ELSE} (.*) )? { END_UNLESS_LVAR: \1 }
+             /$find_lvar->( $1, $loop_href )? $3: $2/gexs;
             s/ (?<!!) { LVAR: ($Var_rx) }
              /$find_lvar->( $1, $loop_href )/gex;
         }
@@ -711,6 +751,26 @@ sub interpolate {
     my( $self, $value ) = @_;
     for ( $value ) {
         no warnings 'uninitialized';
+
+        s/ (?<!!) { IF_VAR: ($Var_rx) }
+            (.*?) (?: {ELSE} (.*) )? { END_IF_VAR: \1 }
+         /$self->get_var( $1 )? $2: $3/gexs;
+        s/ (?<!!) { UNLESS_VAR: ($Var_rx) }
+            (.*?) (?: {ELSE} (.*) )? { END_UNLESS_VAR: \1 }
+         /$self->get_var( $1 )? $3: $2/gexs;
+        s/ (?<!!) { IF_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
+            (.*?) (?: {ELSE} (.*) )? { END_IF_INI: \1 }
+         /$self->get( $1, $2, $3 )? $4: $5/gexs;
+        s/ (?<!!) { UNLESS_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
+            (.*?) (?: {ELSE} (.*) )? { END_UNLESS_INI: \1 }
+         /$self->get( $1, $2, $3 )? $5: $4/gexs;
+        s/ (?<!!) { IF_LOOP: ($Var_rx) }
+            (.*?) (?: {ELSE} (.*) )? { END_IF_LOOP: \1 }
+         /$self->get_loop( $1 )? $2: $3/gexs;
+        s/ (?<!!) { UNLESS_LOOP: ($Var_rx) }
+            (.*?) (?: {ELSE} (.*) )? { END_UNLESS_LOOP: \1 }
+         /$self->get_loop( $1 )? $3: $2/gexs;
+
         s/ (?<!!) { VAR: ($Var_rx) }
          /$self->get_var( $1 )/gex;
         s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
@@ -739,9 +799,11 @@ sub _readfile {
         if !$include_root or
             $include_root =~ m,^/+$, or
             $file =~ m,\.\.,;
-    $file =~ s,^/+,,;
+    $file =~ s'^/+'';
     $file = "$include_root/$file";
-    open my $fh, "<:encoding($Encoding)", $file or croak "Can't open $file: $!";
+    my $encoding = $self->encoding();
+    open my $fh, "<:encoding($encoding)", $file
+        or croak "Can't open $file: $!";
     local $/;
     return <$fh>;
 }
@@ -759,6 +821,7 @@ sub _readfile {
 ## heredoc_style( '<<' )
 ## loop_limit( 10 )
 ## size_limit( 1_000_000 )
+## encoding( 'utf8' )
 our $AUTOLOAD;
 sub AUTOLOAD {
     my $attribute = $AUTOLOAD;
@@ -769,7 +832,7 @@ sub AUTOLOAD {
         file | interpolates | expands |
         inherits | no_inherit | no_override |
         include_root | keep_comments | heredoc_style |
-        loop_limit | size_limit
+        loop_limit | size_limit | encoding
         )$/x;
 
     my $self = shift;
@@ -1317,7 +1380,7 @@ This value is the path were C<'{INCLUDE:file_path}'> and
 C<'{FILE:file_path}'> will look when file contents are read in.
 
  $Config::Ini::Expanded::include_root = '/web/data';
- my $ini = $Config::Ini::Expanded( string => <<'__' );
+ my $ini = $Config::Ini::Expanded->new( string => <<'__' );
  [section]
  name = "{FILE:stuff}"
  {INCLUDE:ini/more.ini}
@@ -1327,6 +1390,24 @@ In the above example, the value of C<< $ini->get(section=>'name') >>
 would be the contents of C<'/web/data/stuff'>, and the contents of
 C<'/web/data/ini/more.ini'> would be pulled in and used to augment the
 Ini file contents.
+
+=item $Config::Ini::Expanded::encoding
+
+This value is the character encoding expected for the ini data.
+It applies in new()/init() (which includes C<'{INCLUDE:file_path}'>)
+and C<'{FILE:file_path}'>.
+
+ $Config::Ini::Expanded::encoding = 'iso-8859-1';
+ my $ini = $Config::Ini::Expanded->new( string => <<'__' );
+ [section]
+ name = "{FILE:stuff}"
+ {INCLUDE:ini/more.ini}
+ __
+
+In the above example, the character encoding for the C<'string'>
+parameter value is assumed to be C<'iso-8859-1'> (rather than the
+default C<'utf8'>).  This encoding is then assumed for the
+C<'{FILE:stuff}'> operation and for C<'{INCLUDE:ini/more.ini}'>.
 
 =back
 
@@ -1500,6 +1581,8 @@ C<'size_limit'> to override the default: 1_000_000.
 C<'include_root'> to override the default: '' (inclusions not
 allowed).
 
+C<'encoding'> to override the default: 'utf8'.
+
 Also see GLOBAL SETTINGS above.
 
 If you do not pass any parameters to C<new()>, you can later call
@@ -1507,9 +1590,9 @@ C<init()> with the same parameters described above.
 
 By default, if you give a filename or string, the module will open it
 using ":encoding(utf8)".  You can change this by setting
-$Config::Ini::Expanded::Encoding, e.g.,
+$Config::Ini::Expanded::encoding, e.g.,
 
- $Config::Ini::Expanded::Encoding = "iso-8859-1";
+ $Config::Ini::Expanded::encoding = "iso-8859-1";
  my $ini = Config::Ini::Expanded->new( file => 'filename' );
 
 Alternatively, you may open the file yourself using the desired
@@ -1974,6 +2057,16 @@ expanded, it will croak if C<'include_root'> is not set (or is set to
 C<include_root()> accesses the value of the path
 that is stored in the object--not the value of the global
 setting.
+
+=item encoding( 'utf8' )
+
+Use C<encoding()> to get or set the C<'encoding'> value.  This
+value will determine the character encoding that is assumed when
+the ini object is created and when other files are included.
+Also see C<$Config::Ini::Expanded::encoding> for more details.
+
+C<encoding()> accesses the value of the flag that is stored in the
+object--not the value of the global setting.
 
 See also C<init()> and GLOBAL SETTINGS above.
 

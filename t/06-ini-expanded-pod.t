@@ -267,7 +267,7 @@ name = Tom, Dick, and Harry
 name = Fred and Wilma
 
 # liberal separators
-name = <<:parse([,\s\n]+)
+name = <<:parse([, \n]+)
 "Tom, Dick, and Harry" "Fred and Wilma"
 Martha George, 'Hillary and Bill'
 <<

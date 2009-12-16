@@ -36,10 +36,10 @@ like( $from_latin1, qr/^[[:print:]]+$/, 'is recognized printable'  );
 
 is( $from_utf8, $from_latin1, 'internal representations equal' );
 
-# default $Config::Ini::Expanded::Encoding = 'utf8'
+# default $Config::Ini::Expanded::encoding = 'utf8'
 my $ini_from_utf8 = Config::Ini::Expanded->new( string => $utf8_data );
 
-$Config::Ini::Expanded::Encoding = 'iso-8859-1';
+$Config::Ini::Expanded::encoding = 'iso-8859-1';
 my $ini_from_latin1 = Config::Ini::Expanded->new( string => $latin1_data );
 
 is( $ini_from_utf8->as_string(), $ini_from_latin1->as_string(), "as_string's equal" );
