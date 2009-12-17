@@ -1456,9 +1456,52 @@ The Config::Ini::Expanded module exists in order to implement expansion
 templates.  They take the following forms:
 
  {INCLUDE:ini_file_path}
+ 
  {INI:section:name}
+ {IF_INI:section:name}.......{ELSE}...{END_IF_INI:section:name}
+ {UNLESS_INI:section:name}...{ELSE}...{END_UNLESS_INI:section:name}
+ 
  {INI:section:name:i}
+ {IF_INI:section:name:i}.......{ELSE}...{END_IF_INI:section:name:i}
+ {UNLESS_INI:section:name:i}...{ELSE}...{END_UNLESS_INI:section:name:i}
+ 
  {VAR:varname}
+ {IF_VAR:varname}.......{ELSE}...{END_IF_VAR:varname}
+ {UNLESS_VAR:varname}...{ELSE}...{END_UNLESS_VAR:varname}
+ 
+ {LOOP:loopname}
+ 
+     {LVAR:lvarname}
+     {IF_LVAR:lvarname}.......{ELSE}...{END_IF_LVAR:lvarname}
+     {UNLESS_LVAR:lvarname}...{ELSE}...{END_UNLESS_LVAR:lvarname}
+ 
+     {LOOP:nestedloop}
+         {LVAR:nestedlvar}
+     {END_LOOP:nestedloop}
+ 
+     {LC:loopname:index}   (0 ... last index)
+     {LC:loopname:counter} (1 ... last index + 1)
+ 
+     {LC:loopname:first}
+     {IF_LC:loopname:first}.......{ELSE}...{END_IF_LC:loopname:first}
+     {UNLESS_LC:loopname:first}...{ELSE}...{END_UNLESS_LC:loopname:first}
+ 
+     {LC:loopname:last}
+     {IF_LC:loopname:last}.......{ELSE}...{END_IF_LC:loopname:last}
+     {UNLESS_LC:loopname:last}...{ELSE}...{END_UNLESS_LC:loopname:last}
+ 
+     {LC:loopname:odd}
+     {IF_LC:loopname:odd}.......{ELSE}...{END_IF_LC:loopname:odd}
+     {UNLESS_LC:loopname:odd}...{ELSE}...{END_UNLESS_LC:loopname:odd}
+ 
+     {LC:loopname:break(nn)} (e.g., break(2) == "even")
+     {IF_LC:loopname:break(nn)}.......{ELSE}...{END_IF_LC:loopname:break(nn)}
+     {UNLESS_LC:loopname:break(nn)}...{ELSE}...{END_UNLESS_LC:loopname:break(nn)}
+ 
+ {END_LOOP:loopname}
+ {IF_LOOP:loopname}.......{ELSE}...{END_IF_LOOP:loopname}
+ {UNLESS_LOOP:loopname}...{ELSE}...{END_UNLESS_LOOP:loopname}
+ 
  {FILE:file_path}
 
 =over 8
@@ -1506,6 +1549,21 @@ You can provide an occurrence value (array subscript), e.g.,
  this is the second: {INI:section:name:1}.
  <<
 
+=item {IF_INI:section:name}...[{ELSE}...]{END_IF_INI:section:name}
+
+=item {IF_INI:section:name:i}...[{ELSE}...]{END_IF_INI:section:name:i}
+
+=item {UNLESS_INI:section:name}...[{ELSE}...]{END_UNLESS_INI:section:name}
+
+=item {UNLESS_INI:section:name:i}...[{ELSE}...]{END_UNLESS_INI:section:name:i}
+
+These templates provide for conditional text blocks based on the
+truth (or existence) of a named value in a section.  An optional C<'{ELSE}'>
+divider supplies an alternative text block.
+
+Note that the C<'{END_...}'> tags must contain the full contents of the beginning
+tag, including the section, name, and (if supplied) index.
+
 =item {VAR:varname}
 
 The C<'{VAR:varname}'> template is expanded inside double-quoted values
@@ -1519,6 +1577,129 @@ replaced silently with a null string.
  ...
  
  $greeting = $ini->get_expanded( letter => 'greeting' );
+
+=item {IF_VAR:varname}...[{ELSE}...]{END_IF_VAR:varname}
+
+=item {UNLESS_VAR:varname}...[{ELSE}...]{END_UNLESS_VAR:varname}
+
+These templates provide for conditional text blocks based on the
+truth (or existence) of a variable.  An optional C<'{ELSE}'>
+divider supplies an alternative text block.
+
+Note that the C<'{END_...}'> tags must contain the full contents
+of the beginning tag, including the variable name.
+
+=item {LOOP:loopname}...{LVAR:lvarname}...{END_LOOP:loopname}
+
+This template enables loops that are similar to those in HTML::Template,
+i.e., they iterate over an array of hashes.  The C<'{LVAR:...}'> tag is
+where you display the values from each hash.
+
+Use set_loop() to provide the array reference--and it may include
+nested loops, e.g.,
+
+ $ini->set_loop( loop1 => [{
+     var1 => 'val1',
+     var2 => 'val2',
+     loop2 => [{ innervar1 => 'innerval1', innervar2 => 'innerval1' }]
+     }] );
+ 
+ {LOOP:loop1}
+     {LVAR:var1}{LVAR:var2}
+     {LOOP:loop2}{LVAR:innervar1}{LVAR:innervar2}{END_LOOP:loop2}
+ {END_LOOP:loop1}
+
+Note that nearly everything is "global".  In other words, C<'{VAR:...}'>
+and C<'{INI:...}'> tags may be displayed inside any loop.  Also, C<'{LOOP:...}'>
+tags at the top level (named in the set_loop() call) may be displayed inside
+any other loop.  And, nested C<'{LOOP:...}'> tags may contain C<'{LOOP:...}'>
+and C<'{LVAR:...}'> tags from parent loops.  In this case, loop name and lvar name
+collisions favor the current loop and then the closest parent.
+
+So given:
+
+ $ini->put( section1 => 'name1', 'value1' );
+ $ini->set_var( var1 => 'val1' );
+ $ini->set_loop( loop1 => [{
+         var1 => 'loop1val1',
+         var2 => 'loop1val2',
+         loop2 => [{
+             loop2var1 => 'loop2val1',
+             var2      => 'loop2val2'
+             }]
+     }],
+     loop3 => [{
+         var1      => 'loop3val1',
+         loop3var2 => 'loop3val2'
+         }]
+     );
+
+The following is possible:
+
+ {LOOP:loop1}
+     {INI:section1:name1}{VAR:var1}
+     {LVAR:var1}              (i.e., 'loop1val1')
+     {LVAR:var2}              (i.e., 'loop1val2')
+     {LOOP:loop2}
+         {INI:section_a:name1}{VAR:var1} (same as above)
+         {LVAR:var1}          (i.e., 'loop1val1')
+         {LVAR:loop2var1}     (i.e., 'loop2val1')
+         {LVAR:var2}          (i.e., 'loop2val2')
+         {LOOP:loop3}
+             {LVAR:var1}      (i.e., 'loop3val1')
+             {LVAR:loop3var2} (i.e., 'loop3val2')
+             {LVAR:var2}      (i.e., 'loop2val2')
+         {END_LOOP:loop3}
+     {END_LOOP:loop2}
+ {END_LOOP:loop1}
+
+Note that when a top-level loop is displayed inside a second loop,
+the second loop is considered a "parent" for the purposes of resolving
+the lvar names, e.g., C<'{LVAR:var2}'> inside loop3 above resolves to
+the value from loop2.  If loop3 were not inside another loop that
+defined var2, then C<'{LVAR:var2}'> would be null inside loop3.
+
+What can't be displayed are nested loops and lvars from a different loop.
+For example, the following is not possible:
+
+ {LOOP:loop3}
+     {LOOP:loop2}
+     ...
+     {END_LOOP:loop2}
+ {END_LOOP:loop3}
+
+This is because there would normally be many "loop2"s and, outside the
+context of C<'{LOOP:loop1}'>, a reference to loop2 would be
+ambiguous (not to mention being tough to locate).
+
+On the other hand, the following I<is> possible:
+
+ {LOOP:loop1}
+     {LOOP:loop3}
+         {LOOP:loop2}
+             {LVAR:var1}  (i.e., 'loop3val1')
+             {LVAR:var2}  (i.e., 'loop2val2')
+         {END_LOOP:loop2}
+     {END_LOOP:loop3}
+ {END_LOOP:loop1}
+
+This is because loop2 is now referenced in the context of looping
+through loop1, so determining what to display is not ambiguous.
+The fact that loop2 is being displayed inside loop3 (inside loop1)
+doesn't alter the fact that loop1 is now one of loop2's parents.
+What it does alter is where the value for var1 comes from, i.e.,
+from loop3 (the closest parent), not loop1.
+
+This illustrates again that for the purposes of loop and lvar
+name resolutions, a parent relationship that is based on how the
+loops are displayed trumps a parent relationship that
+is based on how the loops are defined.
+
+If you're lost at this point, don't worry too much.  Most of the
+time, things will happen as you intend.  The above explanation
+attempts to be as complete as possible both to explain why things
+might not happen as you intended and to show what is possible
+(that, e.g., isn't possible in HTML::Template).
 
 =item {FILE:file_path}
 
