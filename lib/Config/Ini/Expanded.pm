@@ -578,27 +578,27 @@ sub expand {
 
         $changes += $value =~
             s/ (?<!!) { IF_VAR: ($Var_rx) }
-                (.*?) (?: {ELSE} (.*) )? { END_IF_VAR: \1 }
+                (.*?) (?: { ELSE (?:_IF_VAR: \1)? } (.*) )? { END_IF_VAR: \1 }
              /$self->get_var( $1 )? $2: $3/gexs;
         $changes += $value =~
             s/ (?<!!) { UNLESS_VAR: ($Var_rx) }
-                (.*?) (?: {ELSE} (.*) )? { END_UNLESS_VAR: \1 }
+                (.*?) (?: { ELSE (?:_UNLESS_VAR: \1)? } (.*) )? { END_UNLESS_VAR: \1 }
              /$self->get_var( $1 )? $3: $2/gexs;
         $changes += $value =~
             s/ (?<!!) { IF_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-                (.*?) (?: {ELSE} (.*) )? { END_IF_INI: \1 }
+                (.*?) (?: { ELSE (?:_IF_INI: \1)? } (.*) )? { END_IF_INI: \1 }
              /$self->get( $1, $2, $3 )? $4: $5/gexs;
         $changes += $value =~
             s/ (?<!!) { UNLESS_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-                (.*?) (?: {ELSE} (.*) )? { END_UNLESS_INI: \1 }
+                (.*?) (?: { ELSE (?:_UNLESS_INI: \1)? } (.*) )? { END_UNLESS_INI: \1 }
              /$self->get( $1, $2, $3 )? $5: $4/gexs;
         $changes += $value =~
             s/ (?<!!) { IF_LOOP: ($Var_rx) }
-                (.*?) (?: {ELSE} (.*) )? { END_IF_LOOP: \1 }
+                (.*?) (?: { ELSE(?:_IF_LOOP: \1)? } (.*) )? { END_IF_LOOP: \1 }
              /$self->get_loop( $1 )? $2: $3/gexs;
         $changes += $value =~
             s/ (?<!!) { UNLESS_LOOP: ($Var_rx) }
-                (.*?) (?: {ELSE} (.*) )? { END_UNLESS_LOOP: \1 }
+                (.*?) (?: { ELSE(?:_UNLESS_LOOP: \1)? } (.*) )? { END_UNLESS_LOOP: \1 }
              /$self->get_loop( $1 )? $3: $2/gexs;
 
         $changes += $value =~
@@ -634,16 +634,27 @@ sub expand {
         }
     }  # while
 
-    # undo postponements
-    # Note, this is outside the above while loop, because otherwise
-    # there's no point, i.e., there would be no postponements.
+    # Undo postponements.
+    # Note, these are outside the above while loop, because otherwise there
+    # would be no point, i.e., the while loop would negate the postponements.
 
     for( $value ) {
-        s/ !( { VAR:   $Var_rx                            } ) /$1/gx;
-        s/ !( { INI:   $Var_rx : $Var_rx (?: : $Var_rx )? } ) /$1/gx;
-        s/ !( { FILE:  $Var_rx                            } ) /$1/gx;
-        s/ !( { LOOP: ($Var_rx) } .* { END_LOOP: \2 }       ) /$1/gxs;
-        s/ !( { LVAR:  $Var_rx                            } ) /$1/gx;
+        s/ !( {               VAR:   $Var_rx                          } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) VAR:  ($Var_rx) } .* { END_ \2 VAR: \3  } ) /$1/gxs;
+
+        s/ !( {               INI:   $Var_rx : $Var_rx (?: : $Var_rx )?                         } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) INI:  ($Var_rx : $Var_rx (?: : $Var_rx )?) } .* { END_ \2 INI: \3 } ) /$1/gxs;
+
+        s/ !( {               LOOP: ($Var_rx) } .* { END_    LOOP: \2 } ) /$1/gxs;
+        s/ !( { (IF_|UNLESS_) LOOP: ($Var_rx) } .* { END_ \2 LOOP: \3 } ) /$1/gxs;
+
+        s/ !( {               LVAR:  $Var_rx                          } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) LVAR: ($Var_rx) } .* { END_ \2 LVAR: \3 } ) /$1/gxs;
+
+        s/ !( {               LC:    $Var_rx : $Var_rx                        } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) LC:   ($Var_rx : $Var_rx) } .* { END_ \2 LC: \3 } ) /$1/gx;
+
+        s/ !( { FILE:  $Var_rx                                        } ) /$1/gx;
     }
 
     return $value;
@@ -724,7 +735,7 @@ sub _expand_loop {
 
     # here's the meat
     my @ret;
-    for my $i ( 0 .. $#{$loop_aref} ) {
+    for my $i ( $[ .. $#{$loop_aref} ) {
 
         $counter->{ $name }{'index'} = $i;
         my $loop_href = $loop_aref->[ $i ];
@@ -752,20 +763,20 @@ sub _expand_loop {
             s/ (?<!!) { LVAR: ($Var_rx) }
              /$find_lvar->( $1, $loop_href )/gex;
             s/ (?<!!) { IF_LVAR: ($Var_rx) }
-                (.*?) (?: {ELSE} (.*) )? { END_IF_LVAR: \1 }
+                (.*?) (?: { ELSE (?:_IF_LVAR: \1)? } (.*) )? { END_IF_LVAR: \1 }
              /$find_lvar->( $1, $loop_href )? $2: $3/gexs;
             s/ (?<!!) { UNLESS_LVAR: ($Var_rx) }
-                (.*?) (?: {ELSE} (.*) )? { END_UNLESS_LVAR: \1 }
+                (.*?) (?: { ELSE (?:_UNLESS_LVAR: \1)? } (.*) )? { END_UNLESS_LVAR: \1 }
              /$find_lvar->( $1, $loop_href )? $3: $2/gexs;
 
-            # and the loop contexts
+            # and the loop context values
             s/ (?<!!) { LC: ($Var_rx) : ($Var_rx) }
              /$loop_context->( $1, $2 )/gexs;
             s/ (?<!!) { IF_LC: ($Var_rx) : ($Var_rx ) }
-                (.*?) (?: {ELSE} (.*) )? { END_IF_LC: \1 : \2 }
+                (.*?) (?: { ELSE (?:_IF_LC: \1 : \2)? } (.*) )? { END_IF_LC: \1 : \2 }
              /$loop_context->( $1, $2 )? $3: $4/gexs;
             s/ (?<!!) { UNLESS_LC: ($Var_rx) : ($Var_rx ) }
-                (.*?) (?: {ELSE} (.*) )? { END_UNLESS_LC: \1 : \2 }
+                (.*?) (?: { ELSE (?:_UNLESS_LC: \1 : \2)? } (.*) )? { END_UNLESS_LC: \1 : \2 }
              /$loop_context->( $1, $2 )? $4: $3/gexs;
         }
         push @ret, $tval;
@@ -792,22 +803,22 @@ sub interpolate {
         no warnings 'uninitialized';
 
         s/ (?<!!) { IF_VAR: ($Var_rx) }
-            (.*?) (?: {ELSE} (.*) )? { END_IF_VAR: \1 }
+            (.*?) (?: { ELSE (?:_IF_VAR: \1)? } (.*) )? { END_IF_VAR: \1 }
          /$self->get_var( $1 )? $2: $3/gexs;
         s/ (?<!!) { UNLESS_VAR: ($Var_rx) }
-            (.*?) (?: {ELSE} (.*) )? { END_UNLESS_VAR: \1 }
+            (.*?) (?: { ELSE (?:_UNLESS_VAR: \1)? } (.*) )? { END_UNLESS_VAR: \1 }
          /$self->get_var( $1 )? $3: $2/gexs;
         s/ (?<!!) { IF_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-            (.*?) (?: {ELSE} (.*) )? { END_IF_INI: \1 }
+            (.*?) (?: { ELSE (?:_IF_INI: \1)? } (.*) )? { END_IF_INI: \1 }
          /$self->get( $1, $2, $3 )? $4: $5/gexs;
         s/ (?<!!) { UNLESS_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-            (.*?) (?: {ELSE} (.*) )? { END_UNLESS_INI: \1 }
+            (.*?) (?: { ELSE (?:_UNLESS_INI: \1)? } (.*) )? { END_UNLESS_INI: \1 }
          /$self->get( $1, $2, $3 )? $5: $4/gexs;
         s/ (?<!!) { IF_LOOP: ($Var_rx) }
-            (.*?) (?: {ELSE} (.*) )? { END_IF_LOOP: \1 }
+            (.*?) (?: { ELSE (?:_IF_LOOP: \1)? } (.*) )? { END_IF_LOOP: \1 }
          /$self->get_loop( $1 )? $2: $3/gexs;
         s/ (?<!!) { UNLESS_LOOP: ($Var_rx) }
-            (.*?) (?: {ELSE} (.*) )? { END_UNLESS_LOOP: \1 }
+            (.*?) (?: { ELSE (?:_UNLESS_LOOP: \1)? } (.*) )? { END_UNLESS_LOOP: \1 }
          /$self->get_loop( $1 )? $3: $2/gexs;
 
         s/ (?<!!) { VAR: ($Var_rx) }
@@ -819,12 +830,24 @@ sub interpolate {
         s/ (?<!!) { LOOP: ($Var_rx) } (.*) { END_LOOP: \1 }
          /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/gexs;
 
-        # undo postponements
-        s/ !( { VAR:   $Var_rx                            } ) /$1/gx;
-        s/ !( { INI:   $Var_rx : $Var_rx (?: : $Var_rx )? } ) /$1/gx;
-        s/ !( { FILE:  $Var_rx                            } ) /$1/gx;
-        s/ !( { LOOP: ($Var_rx) } .* { END_LOOP: \2 }       ) /$1/gxs;
-        s/ !( { LVAR:  $Var_rx                            } ) /$1/gx;
+        # Undo postponements.
+        s/ !( {               VAR:   $Var_rx                          } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) VAR:  ($Var_rx) } .* { END_ \2 VAR: \3  } ) /$1/gxs;
+
+        s/ !( {               INI:   $Var_rx : $Var_rx (?: : $Var_rx )?                         } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) INI:  ($Var_rx : $Var_rx (?: : $Var_rx )?) } .* { END_ \2 INI: \3 } ) /$1/gxs;
+
+        s/ !( {               LOOP: ($Var_rx) } .* { END_    LOOP: \2 } ) /$1/gxs;
+        s/ !( { (IF_|UNLESS_) LOOP: ($Var_rx) } .* { END_ \2 LOOP: \3 } ) /$1/gxs;
+
+        s/ !( {               LVAR:  $Var_rx                          } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) LVAR: ($Var_rx) } .* { END_ \2 LVAR: \3 } ) /$1/gxs;
+
+        s/ !( {               LC:    $Var_rx : $Var_rx                        } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) LC:   ($Var_rx : $Var_rx) } .* { END_ \2 LC: \3 } ) /$1/gx;
+
+        s/ !( { FILE:  $Var_rx                                        } ) /$1/gx;
+
     }
     return $value;
 }
@@ -1344,7 +1367,8 @@ signify no inheritance, or an array reference pointing to an array of
 Config::Ini::Expanded (or Config::Ini::Edit or Config::Ini) objects.
 
 If such an array of objects is given, then inheritance can take place
-when you call C<< $ini->get(...) >> or C<< $ini->get_var(...) >>.
+when you call C<< $ini->get(...) >>, C<< $ini->get_var(...) >>, or
+C<< $ini->get_loop(...) >>.
 
 That is, if your object (C<$ini>) does not have a value for the
 requested parameters, Config::Ini::Expanded will travel through the
@@ -1367,7 +1391,8 @@ object, it will B<not> inherit from any object in the C<inherits>
 list.
 
 Note that the C<no_inherit> attribute does not affect inheritance that
-may take place when a program calls C<$ini->get_var()>.
+may take place when a program calls C<$ini->get_var()> or
+C<$ini->get_loop()>.
 
 =item $Config::Ini::Expanded::no_override
 
@@ -1452,13 +1477,17 @@ C<'{FILE:stuff}'> operation and for C<'{INCLUDE:ini/more.ini}'>.
 
 =head1 EXPANSION TEMPLATES
 
+=head2 Templates Overview
+
 The Config::Ini::Expanded module exists in order to implement expansion
 templates.  They take the following forms:
 
  {INCLUDE:ini_file_path}
  
+ {FILE:file_path}
+
  {INI:section:name}
- {IF_INI:section:name}.......{ELSE}...{END_IF_INI:section:name}
+ {IF_INI:section:name}.......{ELSE}*..{END_IF_INI:section:name}
  {UNLESS_INI:section:name}...{ELSE}...{END_UNLESS_INI:section:name}
  
  {INI:section:name:i}
@@ -1490,6 +1519,10 @@ templates.  They take the following forms:
      {IF_LC:loopname:last}.......{ELSE}...{END_IF_LC:loopname:last}
      {UNLESS_LC:loopname:last}...{ELSE}...{END_UNLESS_LC:loopname:last}
  
+     {LC:loopname:inner}
+     {IF_LC:loopname:inner}.......{ELSE}...{END_IF_LC:loopname:inner}
+     {UNLESS_LC:loopname:inner}...{ELSE}...{END_UNLESS_LC:loopname:inner}
+ 
      {LC:loopname:odd}
      {IF_LC:loopname:odd}.......{ELSE}...{END_IF_LC:loopname:odd}
      {UNLESS_LC:loopname:odd}...{ELSE}...{END_UNLESS_LC:loopname:odd}
@@ -1502,7 +1535,33 @@ templates.  They take the following forms:
  {IF_LOOP:loopname}.......{ELSE}...{END_IF_LOOP:loopname}
  {UNLESS_LOOP:loopname}...{ELSE}...{END_UNLESS_LOOP:loopname}
  
- {FILE:file_path}
+Note that the C<'{END...}'> tags contain the full contents of the
+corresponding beginning tag.  By putting this onus on the user (i.e.,
+supplying the full beginning tag in multiple places), it removes from
+the code the onus--and processing time--of parsing the text for
+balanced tags.
+
+It can also be viewed as a positive explicit statement of were a tag
+begins and ends (albeit at the cost of verbosity).
+
+* A note about C<'{ELSE}'>: If there are no nested C<'{IF...}'> and/or
+C<'{UNLESS...}'> tags inside the text blocks, then C<'{ELSE}'> is all
+you need.  But if there are nested IF's and/or UNLESS's, you will (may)
+need to expand the ELSE tags to include all of the begin tag (to
+resolve ambiguities), e.g.,
+
+ {IF_VAR:tree}
+     {IF_VAR:maple}{VAR:maple}
+     {ELSE_IF_VAR:maple}{VAR:tree}
+     {END_IF_VAR:maple}
+ {ELSE_IF_VAR:tree}No tree.
+ {END_IF_VAR:tree}
+
+The "(may)" above indicates that you may not strictly need to expand
+one or the other (or even either) of the ELSE's in this example,
+depending on their order.  But you should anyway.
+
+=head2 Templates Specifics
 
 =over 8
 
@@ -1532,6 +1591,21 @@ or during calls to C<get_expanded()> or C<get_interpolated()>.  It is a
 section-level template, not a value-level template.  See
 C<'{FILE:file_path}'> below for value-level file inclusions.
 
+=item {FILE:file_path}
+
+The C<'{FILE:file_path}'> template is expanded inside double-quoted
+values and when you call C<get_expanded()> and C<get_interpolated()>.
+It replaces the template with the contents of
+C<'include_root/file_path'>.  It croaks if the file cannot be opened.
+It also croaks if C<< $self->include_root() >> is not set (or is set to
+C<'/'>), or if C<'file_path'> contains two dots C<'..'>.
+
+ [website]
+ homepage = {FILE:homepage.html}
+ ...
+ 
+ print $ini->get_expanded( website => 'homepage' );
+
 =item {INI:section:name}
 
 =item {INI:section:name:i}
@@ -1549,28 +1623,32 @@ You can provide an occurrence value (array subscript), e.g.,
  this is the second: {INI:section:name:1}.
  <<
 
-=item {IF_INI:section:name}...[{ELSE}...]{END_IF_INI:section:name}
+=item {IF_INI:section:name}...[{ELSE[_IF_INI:section:name]}...]{END_IF_INI:section:name}
 
-=item {IF_INI:section:name:i}...[{ELSE}...]{END_IF_INI:section:name:i}
+=item {IF_INI:section:name:i}...[{ELSE[_IF_INI:section:name:i]}...]{END_IF_INI:section:name:i}
 
-=item {UNLESS_INI:section:name}...[{ELSE}...]{END_UNLESS_INI:section:name}
+=item {UNLESS_INI:section:name}...[{ELSE[_UNLESS_INI:section:name]}...]{END_UNLESS_INI:section:name}
 
-=item {UNLESS_INI:section:name:i}...[{ELSE}...]{END_UNLESS_INI:section:name:i}
+=item {UNLESS_INI:section:name:i}...[{ELSE[_UNLESS_INI:section:name:i]}...]{END_UNLESS_INI:section:name:i}
 
-These templates provide for conditional text blocks based on the
-truth (or existence) of a named value in a section.  An optional C<'{ELSE}'>
+These templates provide for conditional text blocks based on the truth
+(or existence) of a named value in a section.  An optional C<'{ELSE}'>
 divider supplies an alternative text block.
 
-Note that the C<'{END_...}'> tags must contain the full contents of the beginning
-tag, including the section, name, and (if supplied) index.
+Note that the C<'{END...}'> tags must contain the full contents of the
+beginning tag, including the section, name, and (if supplied) index.
+
+Note also that the C<'{ELSE}'> tags may also need to contain the full
+contents of the beginning tag if there are nested IF's and/or UNLESS's
+in between.
 
 =item {VAR:varname}
 
 The C<'{VAR:varname}'> template is expanded inside double-quoted values
 and when you call C<get_expanded()> and C<get_interpolated()>.  It
-performs a call to C<get_var('varname')> and replaces the template
-with the return value.  If the value is undefined, the template is
-replaced silently with a null string.
+performs a call to C<get_var('varname')> and replaces the template with
+the return value.  If the value is undefined, the template is replaced
+silently with a null string.
 
  [letter]
  greeting = Hello {VAR:username}, today is {VAR:today}.
@@ -1578,22 +1656,26 @@ replaced silently with a null string.
  
  $greeting = $ini->get_expanded( letter => 'greeting' );
 
-=item {IF_VAR:varname}...[{ELSE}...]{END_IF_VAR:varname}
+=item {IF_VAR:varname}...[{ELSE[_IF_VAR:varname]}...]{END_IF_VAR:varname}
 
-=item {UNLESS_VAR:varname}...[{ELSE}...]{END_UNLESS_VAR:varname}
+=item {UNLESS_VAR:varname}...[{ELSE[_UNLESS_VAR:varname]}...]{END_UNLESS_VAR:varname}
 
-These templates provide for conditional text blocks based on the
-truth (or existence) of a variable.  An optional C<'{ELSE}'>
-divider supplies an alternative text block.
+These templates provide for conditional text blocks based on the truth
+(or existence) of a variable.  An optional C<'{ELSE}'> divider supplies
+an alternative text block.
 
-Note that the C<'{END_...}'> tags must contain the full contents
-of the beginning tag, including the variable name.
+Note that the C<'{END...}'> tags must contain the full contents of the
+beginning tag, including the variable name.
+
+Note also that the C<'{ELSE}'> tags may also need to contain the full
+contents of the beginning tag if there are nested IF's and/or UNLESS's
+in between.
 
 =item {LOOP:loopname}...{LVAR:lvarname}...{END_LOOP:loopname}
 
-This template enables loops that are similar to those in HTML::Template,
-i.e., they iterate over an array of hashes.  The C<'{LVAR:...}'> tag is
-where you display the values from each hash.
+This template enables loops that are similar to those in
+HTML::Template, i.e., they iterate over an array of hashes.  The
+C<'{LVAR:...}'> tag is where you display the values from each hash.
 
 Use set_loop() to provide the array reference--and it may include
 nested loops, e.g.,
@@ -1609,11 +1691,12 @@ nested loops, e.g.,
      {LOOP:loop2}{LVAR:innervar1}{LVAR:innervar2}{END_LOOP:loop2}
  {END_LOOP:loop1}
 
-Note that nearly everything is "global".  In other words, C<'{VAR:...}'>
-and C<'{INI:...}'> tags may be displayed inside any loop.  Also, C<'{LOOP:...}'>
-tags at the top level (named in the set_loop() call) may be displayed inside
-any other loop.  And, nested C<'{LOOP:...}'> tags may contain C<'{LOOP:...}'>
-and C<'{LVAR:...}'> tags from parent loops.  In this case, loop name and lvar name
+Note that nearly everything is "global".  In other words,
+C<'{VAR:...}'> and C<'{INI:...}'> tags may be displayed inside any
+loop.  Also, C<'{LOOP:...}'> tags at the top level (named in the
+set_loop() call) may be displayed inside any other loop.  And, nested
+C<'{LOOP:...}'> tags may contain C<'{LOOP:...}'> and C<'{LVAR:...}'>
+tags from parent loops.  In this case, loop name and lvar name
 collisions favor the current loop and then the closest parent.
 
 So given:
@@ -1653,14 +1736,14 @@ The following is possible:
      {END_LOOP:loop2}
  {END_LOOP:loop1}
 
-Note that when a top-level loop is displayed inside a second loop,
-the second loop is considered a "parent" for the purposes of resolving
-the lvar names, e.g., C<'{LVAR:var2}'> inside loop3 above resolves to
-the value from loop2.  If loop3 were not inside another loop that
-defined var2, then C<'{LVAR:var2}'> would be null inside loop3.
+Note that when a top-level loop is displayed inside a another loop, the
+other loop is considered a "parent" for the purposes of resolving the
+lvar names, e.g., C<'{LVAR:var2}'> inside loop3 above resolves to the
+value from loop2.  If loop3 were not inside another loop that defined
+var2, then C<'{LVAR:var2}'> would be null inside loop3.
 
-What can't be displayed are nested loops and lvars from a different loop.
-For example, the following is not possible:
+What can't be displayed are nested loops and lvars from a different
+loop.  For example, the following is not possible:
 
  {LOOP:loop3}
      {LOOP:loop2}
@@ -1669,8 +1752,8 @@ For example, the following is not possible:
  {END_LOOP:loop3}
 
 This is because there would normally be many "loop2"s and, outside the
-context of C<'{LOOP:loop1}'>, a reference to loop2 would be
-ambiguous (not to mention being tough to locate).
+context of C<'{LOOP:loop1}'>, a reference to loop2 would be ambiguous
+(not to mention being tough to locate).
 
 On the other hand, the following I<is> possible:
 
@@ -1684,52 +1767,198 @@ On the other hand, the following I<is> possible:
  {END_LOOP:loop1}
 
 This is because loop2 is now referenced in the context of looping
-through loop1, so determining what to display is not ambiguous.
-The fact that loop2 is being displayed inside loop3 (inside loop1)
-doesn't alter the fact that loop1 is now one of loop2's parents.
-What it does alter is where the value for var1 comes from, i.e.,
-from loop3 (the closest parent), not loop1.
+through loop1, so determining what to display is not ambiguous.  The
+fact that loop2 is being displayed inside loop3 (inside loop1) doesn't
+alter the fact that loop1 is now one of loop2's parents.  What it does
+alter is where the value for var1 comes from, i.e., from loop3 (the
+closest parent), not loop1.
 
-This illustrates again that for the purposes of loop and lvar
-name resolutions, a parent relationship that is based on how the
-loops are displayed trumps a parent relationship that
-is based on how the loops are defined.
+This illustrates again that for the purposes of loop and lvar name
+resolutions, a parent relationship, that is based on how the loops are
+displayed, trumps a parent relationship that is based on how the loops
+are defined.
 
-If you're lost at this point, don't worry too much.  Most of the
-time, things will happen as you intend.  The above explanation
-attempts to be as complete as possible both to explain why things
-might not happen as you intended and to show what is possible
-(that, e.g., isn't possible in HTML::Template).
+If you're lost at this point, don't worry too much.  Most of the time,
+things will happen as you intend.  The above explanation attempts to be
+as complete as possible both to explain why things might not happen as
+you intended and to show what is possible (that, e.g., isn't possible
+in HTML::Template).
 
-=item {FILE:file_path}
+=item {IF_LOOP:loopname}...[{ELSE[_IF_LOOP:loopname]}...]{END_IF_LOOP:loopname}
 
-The C<'{FILE:file_path}'> template is expanded inside double-quoted
-values and when you call C<get_expanded()> and C<get_interpolated()>.
-It replaces the template with the contents of
-C<'include_root/file_path'>.  It croaks if the file cannot be opened.
-It also croaks if C<< $self->include_root() >> is not set (or is set to
-C<'/'>), or if C<'file_path'> contains two dots C<'..'>.
+=item {UNLESS_LOOP:loopname}...[{ELSE[_UNLESS_LOOP:loopname]}...]{END_UNLESS_LOOP:loopname}
 
- [website]
- homepage = {FILE:homepage.html}
- ...
- 
- print $ini->get_expanded( website => 'homepage' );
+These templates provide for conditional text blocks based on the
+existence of a loop.  An optional C<'{ELSE}'> divider supplies an
+alternative text block.
 
-=item Postponed Expansion/Interpolation
+Note that the C<'{END...}'> tags must contain the full contents of the
+beginning tag, including the loop name.
+
+Note also that the C<'{ELSE}'> tags may also need to contain the full
+contents of the beginning tag if there are nested IF's and/or UNLESS's
+in between.
+
+=item {LVAR:lvarname}
+
+As stated above, this template is used inside a C<'{LOOP...}'> to
+display the values from each hash in the loop.  Outside a loop, this
+template will be silently replaced with nothing.
+
+Inside multiple nested loops, this template will be replaced with the
+value defined in the current loop or with a value found in one of the
+parent loops--from the closest parent if it's defined in more than
+one.  Note that for name collisions, "closest parent" is relative to
+how the templates are being displayed rather than how they are defined
+in set_loop().
+
+Note that unlike in HTML::Template (and it's family of modules),
+C<'{LVAR...}'> is distinct from C<'{VAR...}'>.  So you may define VAR's
+with the same names as LVAR's (values inside loops) without problems,
+because there are separate tags to access the separate "name spaces",
+as it were.
+
+Note also that there is no set_lvar() method.  This is because LVAR's
+are always set inside loops via set_loop().
+
+=item {IF_LVAR:lvarname}...[{ELSE[_IF_LVAR:lvarname]}...]{END_IF_LVAR:lvarname}
+
+=item {UNLESS_LVAR:lvarname}...[{ELSE[_UNLESS_LVAR:lvarname]}...]{END_UNLESS_LVAR:lvarname}
+
+These templates provide for conditional text blocks based on the truth
+(or existence) of a value inside a loop.  An optional C<'{ELSE}'>
+divider supplies an alternative text block.
+
+Note that the C<'{END...}'> tags must contain the full contents of the
+beginning tag, including the lvar name.
+
+Note also that the C<'{ELSE}'> tags may also need to contain the full
+contents of the beginning tag if there are nested IF's and/or UNLESS's
+in between.
+
+As with C<'{LVAR...}'>, these conditionals do not have reasonable
+meaning outside a loop.  That is, if used outside a loop, these will
+always register as false, so I<something> might be displayed, but it
+probably won't mean what you think.
+
+=back
+
+=head2 Loop Context Variables
+
+In HTML::Template (and other modules based on it, like
+HTML::Template::Compiled) there are values you can access that reflect
+the current loop context, i.e., __first__, __last__, __inner__,
+__odd__, __counter__, as well as __index__, and __break_ (from
+H::T::C).
+
+These values are supported in this module, though without the double
+underscores (since the syntax separates them from the loop name).  In
+addition, in this module, these values are available not only for the
+current loop, but also for parent loops (because the syntax includes
+the loop name).
+
+=over 8
+
+=item {LC:loopname:index}   (0 ... last index)
+
+The current index of the loop (starting with 0).  This differs from
+C<'{LC:loopname:counter}'>, which starts with 1.
+
+=item {LC:loopname:counter} (1 ... last index + 1)
+
+The current counter (line number?) of the loop (starting with 1).  This
+differs from C<'{LC:loopname:index}'>, which starts with 0.
+
+=item {LC:loopname:first}
+
+=item {IF_LC:loopname:first}.......{ELSE[_IF_LC:loopname:first]}...{END_IF_LC:loopname:first}
+
+=item {UNLESS_LC:loopname:first}...{ELSE[_UNLESS_LC:loopname:first]}...{END_UNLESS_LC:loopname:first}
+
+The template C<'{LC:loopname:first}'> displays "1" (true) if the
+current iteration is the first one, "" (false) if not.  The IF and
+UNLESS templates provide for conditional text blocks based on these
+boolean values.
+
+=item {LC:loopname:last}
+
+=item {IF_LC:loopname:last}.......{ELSE[_IF_LC:loopname:last]}...{END_IF_LC:loopname:last}
+
+=item {UNLESS_LC:loopname:last}...{ELSE[_UNLESS_LC:loopname:last]}...{END_UNLESS_LC:loopname:last}
+
+The template C<'{LC:loopname:last}'> displays "1" (true) if the current
+iteration is the last one, "" (false) if not.  The IF and UNLESS
+templates provide for conditional text blocks based on these boolean
+values.
+
+=item {LC:loopname:inner}
+
+=item {IF_LC:loopname:inner}.......{ELSE[_IF_LC:loopname:inner]}...{END_IF_LC:loopname:inner}
+
+=item {UNLESS_LC:loopname:inner}...{ELSE[_UNLESS_LC:loopname:inner]}...{END_UNLESS_LC:loopname:inner}
+
+The template C<'{LC:loopname:inner}'> displays "1" (true) if the
+current iteration is not the first one and is not the last one, ""
+(false) otherwise.  The IF and UNLESS templates provide for conditional
+text blocks based on these boolean values.
+
+=item {LC:loopname:odd}
+
+=item {IF_LC:loopname:odd}.......{ELSE[_IF_LC:loopname:odd]}...{END_IF_LC:loopname:odd}
+
+=item {UNLESS_LC:loopname:odd}...{ELSE[_UNLESS_LC:loopname:odd]}...{END_UNLESS_LC:loopname:odd}
+
+The template C<'{LC:loopname:odd}'> displays "1" (true) if the current
+iteration is odd, "" (false) if not.  The IF and UNLESS templates
+provide for conditional text blocks based on these boolean values.
+
+=item {LC:loopname:break(nn)} (e.g., break(2) == "even")
+
+=item {IF_LC:loopname:break(nn)}.......{ELSE[_IF_LC:loopname:break(nn)]}...{END_IF_LC:loopname:break(nn)}
+
+=item {UNLESS_LC:loopname:break(nn)}...{ELSE[_UNLESS_LC:loopname:break(nn)]}...{END_UNLESS_LC:loopname:break(nn)}
+
+The template C<'{LC:loopname:break(nn)}'> displays "1" (true) if the
+current iteration modulo the number 'nn' is true, "" (false) if not.
+The IF and UNLESS templates provide for conditional text blocks based on
+these boolean values.
+
+Note that C<'{LC:loopname:break(2)}'> would be like saying
+C<'{LC:loopname:even}'> if the "even" template existed--which
+it doesn't.
+
+This feature is designed to allow you to insert things, e.g., column
+headings, at regular intervals in a loop.
+
+=back
+
+=head2 Postponed Expansion/Interpolation
 
 Expansion and interpolation can be I<postponed> for value-level
 expansion templates by placing an exclamation point (or 'bang' or 'not'
 symbol) just before the opening brace of an expansion template, e.g.,
 
  !{INI:section:name}
+ !{IF_INI:section:name}...{END_IF_INI:section:name} (and UNLESS)
  !{VAR:varname}
+ !{IF_VAR:varname}...{END_IF_VAR:varname} (and UNLESS)
+ !{LOOP:loopname}...!{LVAR:lvarname}...!{LC:counter}...{END_LOOP:loopname}
+ !{IF_LOOP:loopname}...{END_IF_LOOP:loopname} (and UNLESS)
  !{FILE:file_path}
 
 This feature allows you to use expansion templates to create other
 expansion templates that will be expanded later (by your own program or
-another program).  Depending on your needs, you may postpone multiple
-times with multiple bangs, e.g.,
+another program).
+
+Note that postponing loops adds an additional complication:  To
+postpone a nested loop, you must also postpone all of the loop-related
+templates within the loop (sorry about that).
+
+You can do this even if the loop isn't nested (as shown above), if you
+want to be safe.
+
+Depending on your needs, you may postpone multiple times with multiple
+bangs, e.g.,
 
  !!{INI:section:name}
 
@@ -1739,8 +1968,6 @@ Note that these postponements happen inside C<expand()> and
 C<interpolate()>.  Since the C<'{INCLUDE:ini_file_path}'> template is
 expanded in C<init()>, it is not a value-level template and does not
 have the postponement feature; its expansion cannot be postponed.
-
-=back
 
 =head1 METHODS
 
@@ -1939,7 +2166,7 @@ must also pass a null string as the first parameter.
  my $value  = $ini->get( '', $name, -1 ); # get last occurrence
 
 If the section and name are not found, C<get()> will inherit from any
-inherited objects, and if still not found will return no value.
+inherited objects, and if still not found, will return no value.
 
 =item get_interpolated( $section, $name )
 
@@ -2117,7 +2344,31 @@ C<interpolate()> to expand templates of the form, C<'{VAR:varname}'>.
  $today = $ini->get_var( 'today' );
 
 If the C<$varname> is not found, C<get_var()> will inherit from any
-inherited objects, and if still not found will return no value.
+inherited objects, and if still not found, will return no value.
+
+=item set_loop( 'loopname', $loop_structure )
+
+Use C<set_loop()> to assign a loop structure to a C<'loopname'>.  A
+loop structure is an array of hashes.  The parameter,
+C<'$loop_structure'>, should be this array's reference.
+
+This value will be substituted into any expansion templates of the
+form, C<'{LOOP:loopname}...{END_LOOP:loopname}'>.
+
+ $ini->set_loop( 'months', [{1=>'jan'},{2=>'feb'},...,{12=>'dec'}] );
+
+=item get_loop( $loopname )
+
+Use C<get_loop()> to retrieve the loop structure for a loopname.  This
+method is called by C<get_expanded()>, C<get_interpolated()>,
+C<expand()>, and C<interpolate()> to expand templates of the form,
+C<'{LOOP:loopname}...{END_LOOP:loopname}'> (as well as
+C<'{IF_LOOP...}'> and C<'{UNLESS_LOOP...}'>).
+
+ $aref = $ini->get_loop( 'months' );
+
+If the C<$loopname> is not found, C<get_loop()> will inherit from any
+inherited objects, and if still not found, will return no value.
 
 =back
 
