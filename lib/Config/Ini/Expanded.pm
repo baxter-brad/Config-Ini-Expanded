@@ -567,94 +567,112 @@ sub get_expanded {
 #---------------------------------------------------------------------
 ## $ini->expand( $value, $section, $name )
 
-# todo: if and first
-
 sub expand {
     my ( $self, $value, $section, $name ) = @_;
-    my $changes;
+
     my $loops;
-    while( 1 ) {
-        no warnings 'uninitialized';
+    while( 1 ) {  no warnings 'uninitialized';
+
+        my $changes;
 
         $changes += $value =~
-            s/ (?<!!) { IF_VAR: ($Var_rx) }
-                (.*?) (?: { ELSE (?:_IF_VAR: \1)? } (.*) )? { END_IF_VAR: \1 }
-             /$self->get_var( $1 )? $2: $3/gexs;
+            s/ (?<!!) { IF_VAR:               ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE (?: _IF_VAR:     \1 )?     } (.*?) )?  # $3
+                      { END_IF_VAR:           \1        }
+                      /$self->get_var( $1 )? $2: $3/gexs;
         $changes += $value =~
-            s/ (?<!!) { UNLESS_VAR: ($Var_rx) }
-                (.*?) (?: { ELSE (?:_UNLESS_VAR: \1)? } (.*) )? { END_UNLESS_VAR: \1 }
-             /$self->get_var( $1 )? $3: $2/gexs;
+            s/ (?<!!) { UNLESS_VAR:           ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE (?: _UNLESS_VAR: \1 )?     } (.*?) )?  # $3
+                      { END_UNLESS_VAR:       \1        }
+                      /$self->get_var( $1 )? $3: $2/gexs;
+
         $changes += $value =~
-            s/ (?<!!) { IF_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-                (.*?) (?: { ELSE (?:_IF_INI: \1)? } (.*) )? { END_IF_INI: \1 }
-             /$self->get( $1, $2, $3 )? $4: $5/gexs;
+            s/ (?<!!) { IF_INI:               ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )?    } (.*?)     # $4
+                  (?: { ELSE (?: _IF_INI:     \1        : \2        (?: : \3        )? )? } (.*?) )?  # $5
+                      { END_IF_INI:           \1        : \2        (?: : \3        )?    }
+                      /$self->get( $1, $2, $3 )? $4: $5/gexs;
         $changes += $value =~
-            s/ (?<!!) { UNLESS_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-                (.*?) (?: { ELSE (?:_UNLESS_INI: \1)? } (.*) )? { END_UNLESS_INI: \1 }
-             /$self->get( $1, $2, $3 )? $5: $4/gexs;
+            s/ (?<!!) { UNLESS_INI:           ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )?    } (.*?)     # $4
+                  (?: { ELSE (?: _UNLESS_INI: \1        : \2        (?: : \3        )? )? } (.*?) )?  # $5
+                      { END_UNLESS_INI:       \1        : \2        (?: : \3        )?    }
+                      /$self->get( $1, $2, $3 )? $5: $4/gexs;
+
         $changes += $value =~
-            s/ (?<!!) { IF_LOOP: ($Var_rx) }
-                (.*?) (?: { ELSE(?:_IF_LOOP: \1)? } (.*) )? { END_IF_LOOP: \1 }
-             /$self->get_loop( $1 )? $2: $3/gexs;
+            s/ (?<!!) { IF_LOOP:               ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE (?: _IF_LOOP:     \1)?      } (.*?) )?  # $3
+                      { END_IF_LOOP:           \1        }
+                      /$self->get_loop( $1 )? $2: $3/gexs;
         $changes += $value =~
-            s/ (?<!!) { UNLESS_LOOP: ($Var_rx) }
-                (.*?) (?: { ELSE(?:_UNLESS_LOOP: \1)? } (.*) )? { END_UNLESS_LOOP: \1 }
-             /$self->get_loop( $1 )? $3: $2/gexs;
+            s/ (?<!!) { UNLESS_LOOP:           ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE (?: _UNLESS_LOOP: \1)?      } (.*?) )?  # $3
+                      { END_UNLESS_LOOP:       \1        }
+                      /$self->get_loop( $1 )? $3: $2/gexs;
 
         $changes += $value =~
             s/ (?<!!) { VAR: ($Var_rx) }
-             /$self->get_var( $1 )/gex;
+                      /$self->get_var( $1 )/gex;
         $changes += $value =~
             s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-             /$self->get( $1, $2, $3 )/gex;
+                      /$self->get( $1, $2, $3 )/gex;
+        $changes += $value =~
+            s/ (?<!!) { LOOP: ($Var_rx) } (.*?)  # $2
+                      { END_LOOP: \1    }
+                      /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/gexs;
         $changes += $value =~
             s/ (?<!!) { FILE: ($Var_rx) }
-             /$self->_readfile( $1 )/gex;
-        $changes += $value =~
-            s/ (?<!!) { LOOP: ($Var_rx) } (.*) { END_LOOP: \1 }
-             /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/gexs;
+                      /$self->_readfile( $1 )/gex;
 
         last unless $changes;
 
-        $changes = 0;
-        if( ++$loops > $loop_limit or
-            length $value > $size_limit ) {
+        if( ++$loops > $loop_limit or length $value > $size_limit ) {
             my $suspect = '';
-            $suspect = " ($1)" if $value =~ /(?<!!)(
-                { VAR:   $Var_rx                            } |
-                { INI:   $Var_rx : $Var_rx (?: : $Var_rx )? } |
-                { FILE:  $Var_rx                            } |
-                { LOOP: ($Var_rx) } .* { END_LOOP: \2 }
-                )/xs;
+               $suspect = " ($1)" if $value =~
+                /(?<!!) (
+                        {               VAR:  $Var_rx                          } |
+                        { (IF_|UNLESS_) VAR: ($Var_rx) } .*? { END_ \2 VAR: \3 } |
+
+                        {               INI:  $Var_rx : $Var_rx (?: : $Var_rx )?                          } |
+                        { (IF_|UNLESS_) INI: ($Var_rx : $Var_rx (?: : $Var_rx )?) } .*? { END_ \4 INI: \5 } |
+
+                        {               LOOP: ($Var_rx) } .*? { END_LOOP: \6     } |
+                        { (IF_|UNLESS_) LOOP: ($Var_rx) } .*? { END_ \7 LOOP: \8 } |
+
+                        { FILE:  $Var_rx }
+                        )/xs;
+
             my $msg = "expand(): Loop alert at [$section]=>$name$suspect:\n" .
                 ( ( length($value) > 44 )                            ?
                 substr( $value, 0, 44 ).'...('.length($value).')...' :
                 $value );
             croak $msg;
         }
+
     }  # while
 
     # Undo postponements.
     # Note, these are outside the above while loop, because otherwise there
     # would be no point, i.e., the while loop would negate the postponements.
 
+    # Note, LVAR and LC postponements have to be done here, too, because their
+    # postponed loop would not have been expanded yet.
+
     for( $value ) {
-        s/ !( {               VAR:   $Var_rx                          } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) VAR:  ($Var_rx) } .* { END_ \2 VAR: \3  } ) /$1/gxs;
+        s/ !( {               VAR:   $Var_rx                           } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) VAR:  ($Var_rx) } .*? { END_ \2 VAR: \3  } ) /$1/gxs;
 
-        s/ !( {               INI:   $Var_rx : $Var_rx (?: : $Var_rx )?                         } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) INI:  ($Var_rx : $Var_rx (?: : $Var_rx )?) } .* { END_ \2 INI: \3 } ) /$1/gxs;
+        s/ !( {               INI:   $Var_rx : $Var_rx (?: : $Var_rx )?                          } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) INI:  ($Var_rx : $Var_rx (?: : $Var_rx )?) } .*? { END_ \2 INI: \3 } ) /$1/gxs;
 
-        s/ !( {               LOOP: ($Var_rx) } .* { END_    LOOP: \2 } ) /$1/gxs;
-        s/ !( { (IF_|UNLESS_) LOOP: ($Var_rx) } .* { END_ \2 LOOP: \3 } ) /$1/gxs;
+        s/ !( {               LOOP: ($Var_rx) } .*? { END_    LOOP: \2 } ) /$1/gxs;
+        s/ !( { (IF_|UNLESS_) LOOP: ($Var_rx) } .*? { END_ \2 LOOP: \3 } ) /$1/gxs;
 
-        s/ !( {               LVAR:  $Var_rx                          } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) LVAR: ($Var_rx) } .* { END_ \2 LVAR: \3 } ) /$1/gxs;
+        s/ !( {               LVAR:  $Var_rx                           } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) LVAR: ($Var_rx) } .*? { END_ \2 LVAR: \3 } ) /$1/gxs;
 
-        s/ !( {               LC:    $Var_rx : $Var_rx                        } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) LC:   ($Var_rx : $Var_rx) } .* { END_ \2 LC: \3 } ) /$1/gx;
+        s/ !( {               LC:    $Var_rx : $Var_rx                         } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) LC:   ($Var_rx : $Var_rx) } .*? { END_ \2 LC: \3 } ) /$1/gx;
 
-        s/ !( { FILE:  $Var_rx                                        } ) /$1/gx;
+        s/ !( { FILE:  $Var_rx } ) /$1/gx;
     }
 
     return $value;
@@ -709,13 +727,17 @@ sub _expand_loop {
         return;
     };
 
-    # look for the named counter
     my $loop_context = sub {
-        my( $name, $lc ) = @_;
+        my( $this, $lc ) = @_;
         my $c;
-        Look: for ( $counter, @$counters ) {
-            for ( $_->{ $name } ) {
-                if( defined ) { $c = $_; last Look } } }
+        if( defined $this and $this ne '.' ) {
+            Look: for ( $counter, @$counters ) {
+                for ( $_->{ $this } ) {
+                    if( defined ) { $c = $_; last Look } } }
+        }
+        else {
+            $c = $counter->{ $name };
+        }
         return unless $c;
         my $i    = $c->{'index'};
         my $last = $c->{'last'};
@@ -746,12 +768,16 @@ sub _expand_loop {
             unless ref $loop_href eq 'HASH';
 
         my $tval = $value; 
-        for( $tval ) {
-            no warnings 'uninitialized';
+
+        my $loops;
+        while( 1 ) {  no warnings 'uninitialized';
+
+            my $changes;
 
             # first, expand nested loops
+            $changes += $tval =~ 
             s/{ LOOP: ($Var_rx) } (.*) { END_LOOP: \1 }
-             /$self->_expand_loop(
+             /$self->_expand_loop(  # recurse
                  $2,                              # $value
                  $1,                              # $name
                  $find_loop->( $1, $loop_href ),  # $loop_aref
@@ -760,24 +786,61 @@ sub _expand_loop {
                  )/gexs;
 
             # then the loop variables
+            $changes += $tval =~ 
             s/ (?<!!) { LVAR: ($Var_rx) }
-             /$find_lvar->( $1, $loop_href )/gex;
-            s/ (?<!!) { IF_LVAR: ($Var_rx) }
-                (.*?) (?: { ELSE (?:_IF_LVAR: \1)? } (.*) )? { END_IF_LVAR: \1 }
-             /$find_lvar->( $1, $loop_href )? $2: $3/gexs;
-            s/ (?<!!) { UNLESS_LVAR: ($Var_rx) }
-                (.*?) (?: { ELSE (?:_UNLESS_LVAR: \1)? } (.*) )? { END_UNLESS_LVAR: \1 }
-             /$find_lvar->( $1, $loop_href )? $3: $2/gexs;
+                      /$find_lvar->( $1, $loop_href )/gex;
+
+            $changes += $tval =~ 
+            s/ (?<!!) { IF_LVAR:               ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE (?: _IF_LVAR:     \1 )?     } (.*?) )?  # $3
+                      { END_IF_LVAR:           \1        }
+                      /$find_lvar->( $1, $loop_href )? $2: $3/gexs;
+            $changes += $tval =~ 
+            s/ (?<!!) { UNLESS_LVAR:           ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE (?: _UNLESS_LVAR: \1 )?     } (.*?) )?  # $3
+                      { END_UNLESS_LVAR:       \1        }
+                      /$find_lvar->( $1, $loop_href )? $3: $2/gexs;
 
             # and the loop context values
-            s/ (?<!!) { LC: ($Var_rx) : ($Var_rx) }
-             /$loop_context->( $1, $2 )/gexs;
-            s/ (?<!!) { IF_LC: ($Var_rx) : ($Var_rx ) }
-                (.*?) (?: { ELSE (?:_IF_LC: \1 : \2)? } (.*) )? { END_IF_LC: \1 : \2 }
-             /$loop_context->( $1, $2 )? $3: $4/gexs;
-            s/ (?<!!) { UNLESS_LC: ($Var_rx) : ($Var_rx ) }
-                (.*?) (?: { ELSE (?:_UNLESS_LC: \1 : \2)? } (.*) )? { END_UNLESS_LC: \1 : \2 }
-             /$loop_context->( $1, $2 )? $4: $3/gexs;
+            $changes += $tval =~ 
+            s/ (?<!!) { LC: (?: ($Var_rx) : )? ($Var_rx) }
+                      /$loop_context->( $1, $2 )/gexs;
+
+            $changes += $tval =~ 
+            s/ (?<!!) { IF_LC:               (?: ($Var_rx) : )? ($Var_rx) } (.*?)     # $3
+                  (?: { ELSE (?: _IF_LC:     (?: \1        : )? \2 )?     } (.*?) )?  # $4
+                      { END_IF_LC:           (?: \1        : )? \2        }
+                      /$loop_context->( $1, $2 )? $3: $4/gexs;
+            $changes += $tval =~ 
+            s/ (?<!!) { UNLESS_LC:           (?: ($Var_rx) : )? ($Var_rx) } (.*?)     # $3
+                  (?: { ELSE (?: _UNLESS_LC: (?: \1        : )? \2 )?     } (.*?) )?  # $4
+                      { END_UNLESS_LC:       (?: \1        : )? \2        }
+                      /$loop_context->( $1, $2 )? $4: $3/gexs;
+
+            last unless $changes;
+
+            if( ++$loops > $loop_limit or length $value > $size_limit ) {
+                my $suspect = '';
+                   $suspect = " ($1)" if $value =~  # XXX change these ...
+                    /(?<!!) (
+                            {               VAR:  $Var_rx                          } |
+                            { (IF_|UNLESS_) VAR: ($Var_rx) } .*? { END_ \2 VAR: \3 } |
+
+                            {               INI:  $Var_rx : $Var_rx (?: : $Var_rx )?                          } |
+                            { (IF_|UNLESS_) INI: ($Var_rx : $Var_rx (?: : $Var_rx )?) } .*? { END_ \4 INI: \5 } |
+
+                            {               LOOP: ($Var_rx) } .*? { END_LOOP: \6     } |
+                            { (IF_|UNLESS_) LOOP: ($Var_rx) } .*? { END_ \7 LOOP: \8 } |
+
+                            { FILE:  $Var_rx }
+                            )/xs;
+
+                my $msg = "_expand_loop(): Loop alert$suspect:\n" .
+                    ( ( length($value) > 44 )                            ?
+                    substr( $value, 0, 44 ).'...('.length($value).')...' :
+                    $value );
+                croak $msg;
+            }
         }
         push @ret, $tval;
     }
@@ -799,55 +862,62 @@ sub get_interpolated {
 ## $ini->interpolate( $value )
 sub interpolate {
     my( $self, $value ) = @_;
-    for ( $value ) {
-        no warnings 'uninitialized';
+    for ( $value ) {  no warnings 'uninitialized';
 
-        s/ (?<!!) { IF_VAR: ($Var_rx) }
-            (.*?) (?: { ELSE (?:_IF_VAR: \1)? } (.*) )? { END_IF_VAR: \1 }
-         /$self->get_var( $1 )? $2: $3/gexs;
-        s/ (?<!!) { UNLESS_VAR: ($Var_rx) }
-            (.*?) (?: { ELSE (?:_UNLESS_VAR: \1)? } (.*) )? { END_UNLESS_VAR: \1 }
-         /$self->get_var( $1 )? $3: $2/gexs;
-        s/ (?<!!) { IF_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-            (.*?) (?: { ELSE (?:_IF_INI: \1)? } (.*) )? { END_IF_INI: \1 }
-         /$self->get( $1, $2, $3 )? $4: $5/gexs;
-        s/ (?<!!) { UNLESS_INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-            (.*?) (?: { ELSE (?:_UNLESS_INI: \1)? } (.*) )? { END_UNLESS_INI: \1 }
-         /$self->get( $1, $2, $3 )? $5: $4/gexs;
-        s/ (?<!!) { IF_LOOP: ($Var_rx) }
-            (.*?) (?: { ELSE (?:_IF_LOOP: \1)? } (.*) )? { END_IF_LOOP: \1 }
-         /$self->get_loop( $1 )? $2: $3/gexs;
-        s/ (?<!!) { UNLESS_LOOP: ($Var_rx) }
-            (.*?) (?: { ELSE (?:_UNLESS_LOOP: \1)? } (.*) )? { END_UNLESS_LOOP: \1 }
-         /$self->get_loop( $1 )? $3: $2/gexs;
+        s/ (?<!!) { IF_VAR:               ($Var_rx) } (.*?)     # $2
+              (?: { ELSE (?: _IF_VAR:     \1 )?     } (.*?) )?  # $3
+                  { END_IF_VAR:           \1        }
+                  /$self->get_var( $1 )? $2: $3/gexs;
+        s/ (?<!!) { UNLESS_VAR:           ($Var_rx) } (.*?)     # $2
+              (?: { ELSE (?: _UNLESS_VAR: \1 )?     } (.*?) )?  # $3
+                  { END_UNLESS_VAR:       \1        }
+                  /$self->get_var( $1 )? $3: $2/gexs;
+
+        s/ (?<!!) { IF_INI:               ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )?    } (.*?)     # $4
+              (?: { ELSE (?: _IF_INI:     \1        : \2        (?: : \3        )? )? } (.*?) )?  # $5
+                  { END_IF_INI:           \1        : \2        (?: : \3        )?    }
+                  /$self->get( $1, $2, $3 )? $4: $5/gexs;
+        s/ (?<!!) { UNLESS_INI:           ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )?    } (.*?)     # $4
+              (?: { ELSE (?: _UNLESS_INI: \1        : \2        (?: : \3        )? )? } (.*?) )?  # $5
+                  { END_UNLESS_INI:       \1        : \2        (?: : \3        )? }
+                  /$self->get( $1, $2, $3 )? $5: $4/gexs;
+
+        s/ (?<!!) { IF_LOOP:               ($Var_rx) } (.*?)     # $2
+              (?: { ELSE (?: _IF_LOOP:     \1 )?     } (.*?) )?  # $3
+                  { END_IF_LOOP:           \1        }
+                  /$self->get_loop( $1 )? $2: $3/gexs;
+        s/ (?<!!) { UNLESS_LOOP:           ($Var_rx) } (.*?)     # $2
+              (?: { ELSE (?: _UNLESS_LOOP: \1 )?     } (.*?) )?  # $3
+                  { END_UNLESS_LOOP:       \1        }
+                  /$self->get_loop( $1 )? $3: $2/gexs;
 
         s/ (?<!!) { VAR: ($Var_rx) }
-         /$self->get_var( $1 )/gex;
+                  /$self->get_var( $1 )/gex;
         s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-         /$self->get( $1, $2, $3 )/gex;
+                  /$self->get( $1, $2, $3 )/gex;
+        s/ (?<!!) { LOOP:     ($Var_rx) } (.*?)
+                  { END_LOOP: \1        }
+                  /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/gexs;
         s/ (?<!!) { FILE: ($Var_rx) }
-         /$self->_readfile( $1 )/gex;
-        s/ (?<!!) { LOOP: ($Var_rx) } (.*) { END_LOOP: \1 }
-         /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/gexs;
+                  /$self->_readfile( $1 )/gex;
 
         # Undo postponements.
-        s/ !( {               VAR:   $Var_rx                          } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) VAR:  ($Var_rx) } .* { END_ \2 VAR: \3  } ) /$1/gxs;
+        s/ !( {               VAR:   $Var_rx                           } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) VAR:  ($Var_rx) } .*? { END_ \2 VAR: \3  } ) /$1/gxs;
 
-        s/ !( {               INI:   $Var_rx : $Var_rx (?: : $Var_rx )?                         } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) INI:  ($Var_rx : $Var_rx (?: : $Var_rx )?) } .* { END_ \2 INI: \3 } ) /$1/gxs;
+        s/ !( {               INI:   $Var_rx : $Var_rx (?: : $Var_rx )?                          } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) INI:  ($Var_rx : $Var_rx (?: : $Var_rx )?) } .*? { END_ \2 INI: \3 } ) /$1/gxs;
 
-        s/ !( {               LOOP: ($Var_rx) } .* { END_    LOOP: \2 } ) /$1/gxs;
-        s/ !( { (IF_|UNLESS_) LOOP: ($Var_rx) } .* { END_ \2 LOOP: \3 } ) /$1/gxs;
+        s/ !( {               LOOP: ($Var_rx) } .*? { END_    LOOP: \2 } ) /$1/gxs;
+        s/ !( { (IF_|UNLESS_) LOOP: ($Var_rx) } .*? { END_ \2 LOOP: \3 } ) /$1/gxs;
 
-        s/ !( {               LVAR:  $Var_rx                          } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) LVAR: ($Var_rx) } .* { END_ \2 LVAR: \3 } ) /$1/gxs;
+        s/ !( {               LVAR:  $Var_rx                           } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) LVAR: ($Var_rx) } .*? { END_ \2 LVAR: \3 } ) /$1/gxs;
 
-        s/ !( {               LC:    $Var_rx : $Var_rx                        } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) LC:   ($Var_rx : $Var_rx) } .* { END_ \2 LC: \3 } ) /$1/gx;
+        s/ !( {               LC:    $Var_rx : $Var_rx                         } ) /$1/gx;
+        s/ !( { (IF_|UNLESS_) LC:   ($Var_rx : $Var_rx) } .*? { END_ \2 LC: \3 } ) /$1/gx;
 
-        s/ !( { FILE:  $Var_rx                                        } ) /$1/gx;
-
+        s/ !( { FILE:  $Var_rx } ) /$1/gx;
     }
     return $value;
 }
@@ -1508,28 +1578,28 @@ templates.  They take the following forms:
          {LVAR:nestedlvar}
      {END_LOOP:nestedloop}
  
-     {LC:loopname:index}   (0 ... last index)
-     {LC:loopname:counter} (1 ... last index + 1)
+     {LC:[loopname:]index}   (0 ... last index)
+     {LC:[loopname:]counter} (1 ... last index + 1)
  
-     {LC:loopname:first}
-     {IF_LC:loopname:first}.......{ELSE}...{END_IF_LC:loopname:first}
-     {UNLESS_LC:loopname:first}...{ELSE}...{END_UNLESS_LC:loopname:first}
+     {LC:[loopname:]first}
+     {IF_LC:[loopname:]first}.......{ELSE}...{END_IF_LC:[loopname:]first}
+     {UNLESS_LC:[loopname:]first}...{ELSE}...{END_UNLESS_LC:[loopname:]first}
  
-     {LC:loopname:last}
-     {IF_LC:loopname:last}.......{ELSE}...{END_IF_LC:loopname:last}
-     {UNLESS_LC:loopname:last}...{ELSE}...{END_UNLESS_LC:loopname:last}
+     {LC:[loopname:]last}
+     {IF_LC:[loopname:]last}.......{ELSE}...{END_IF_LC:[loopname:]last}
+     {UNLESS_LC:[loopname:]last}...{ELSE}...{END_UNLESS_LC:[loopname:]last}
  
-     {LC:loopname:inner}
-     {IF_LC:loopname:inner}.......{ELSE}...{END_IF_LC:loopname:inner}
-     {UNLESS_LC:loopname:inner}...{ELSE}...{END_UNLESS_LC:loopname:inner}
+     {LC:[loopname:]inner}
+     {IF_LC:[loopname:]inner}.......{ELSE}...{END_IF_LC:[loopname:]inner}
+     {UNLESS_LC:[loopname:]inner}...{ELSE}...{END_UNLESS_LC:[loopname:]inner}
  
-     {LC:loopname:odd}
-     {IF_LC:loopname:odd}.......{ELSE}...{END_IF_LC:loopname:odd}
-     {UNLESS_LC:loopname:odd}...{ELSE}...{END_UNLESS_LC:loopname:odd}
+     {LC:[loopname:]odd}
+     {IF_LC:[loopname:]odd}.......{ELSE}...{END_IF_LC:[loopname:]odd}
+     {UNLESS_LC:[loopname:]odd}...{ELSE}...{END_UNLESS_LC:[loopname:]odd}
  
-     {LC:loopname:break(nn)} (e.g., break(2) == "even")
-     {IF_LC:loopname:break(nn)}.......{ELSE}...{END_IF_LC:loopname:break(nn)}
-     {UNLESS_LC:loopname:break(nn)}...{ELSE}...{END_UNLESS_LC:loopname:break(nn)}
+     {LC:[loopname:]break(nn)} (e.g., break(2) == "even")
+     {IF_LC:[loopname:]break(nn)}.......{ELSE}...{END_IF_LC:[loopname:]break(nn)}
+     {UNLESS_LC:[loopname:]break(nn)}...{ELSE}...{END_UNLESS_LC:[loopname:]break(nn)}
  
  {END_LOOP:loopname}
  {IF_LOOP:loopname}.......{ELSE}...{END_IF_LOOP:loopname}
@@ -1559,7 +1629,18 @@ resolve ambiguities), e.g.,
 
 The "(may)" above indicates that you may not strictly need to expand
 one or the other (or even either) of the ELSE's in this example,
-depending on their order.  But you should anyway.
+depending on their order.  But you may want to anyway.
+
+Finally, a note about the loop context tags, C<'{LC...}'>,
+C<'{IF_LC...}'>, C<'{UNLESS_LC...}'>, and their ELSE and END tags:  The
+loopname portion of the tag is optional if the loop context is for the
+current loop (vs. a parent loop).
+
+Since this is usually the case, you'll usually leave off the loopname.
+But if you want to access the loop context of a parent loop, the
+loopname must be included.  In addition, a dot character (period, full
+stop, C<'.'>) may be used to denote the current loop, e.g.,
+C<'{LC:.:counter}'> and C<'{LC:counter}'> are the same.
 
 =head2 Templates Specifics
 
