@@ -81,6 +81,10 @@ tmpl = {LOOP:forest}[{LC:index}]{END_LOOP:forest}
  out = [0][1][2][3][4][5]
  cmt = LC:index
 
+tmpl = {LOOP:forest}[{LC:.:index}]{END_LOOP:forest}
+ out = [0][1][2][3][4][5]
+ cmt = LC:.:index
+
 tmpl = {LOOP:forest}[{LC:forest:index}]{END_LOOP:forest}
  out = [0][1][2][3][4][5]
  cmt = LC:...:index
@@ -88,6 +92,10 @@ tmpl = {LOOP:forest}[{LC:forest:index}]{END_LOOP:forest}
 tmpl = {LOOP:forest}[{LC:counter}]{END_LOOP:forest}
  out = [1][2][3][4][5][6]
  cmt = LC:counter
+
+tmpl = {LOOP:forest}[{LC:.:counter}]{END_LOOP:forest}
+ out = [1][2][3][4][5][6]
+ cmt = LC:.:counter
 
 tmpl = {LOOP:forest}[{LC:forest:counter}]{END_LOOP:forest}
  out = [1][2][3][4][5][6]
@@ -97,6 +105,10 @@ tmpl = {LOOP:forest}[{LC:first}]{END_LOOP:forest}
  out = [1][][][][][]
  cmt = LC:first
 
+tmpl = {LOOP:forest}[{LC:.:first}]{END_LOOP:forest}
+ out = [1][][][][][]
+ cmt = LC:.:first
+
 tmpl = {LOOP:forest}[{LC:forest:first}]{END_LOOP:forest}
  out = [1][][][][][]
  cmt = LC:...:first
@@ -104,6 +116,10 @@ tmpl = {LOOP:forest}[{LC:forest:first}]{END_LOOP:forest}
 tmpl = {LOOP:forest}[{LC:last}]{END_LOOP:forest}
  out = [][][][][][1]
  cmt = LC:last
+
+tmpl = {LOOP:forest}[{LC:.:last}]{END_LOOP:forest}
+ out = [][][][][][1]
+ cmt = LC:.:last
 
 tmpl = {LOOP:forest}[{LC:forest:last}]{END_LOOP:forest}
  out = [][][][][][1]
@@ -113,6 +129,10 @@ tmpl = {LOOP:forest}[{LC:inner}]{END_LOOP:forest}
  out = [][1][1][1][1][]
  cmt = LC:inner
 
+tmpl = {LOOP:forest}[{LC:.:inner}]{END_LOOP:forest}
+ out = [][1][1][1][1][]
+ cmt = LC:.:inner
+
 tmpl = {LOOP:forest}[{LC:forest:inner}]{END_LOOP:forest}
  out = [][1][1][1][1][]
  cmt = LC:...:inner
@@ -120,6 +140,10 @@ tmpl = {LOOP:forest}[{LC:forest:inner}]{END_LOOP:forest}
 tmpl = {LOOP:forest}[{LC:odd}]{END_LOOP:forest}
  out = [1][][1][][1][]
  cmt = LC:odd
+
+tmpl = {LOOP:forest}[{LC:.:odd}]{END_LOOP:forest}
+ out = [1][][1][][1][]
+ cmt = LC:.:odd
 
 tmpl = {LOOP:forest}[{LC:forest:odd}]{END_LOOP:forest}
  out = [1][][1][][1][]
@@ -136,6 +160,10 @@ tmpl = {LOOP:forest}[{LC:break(1)}]{END_LOOP:forest}
 tmpl = {LOOP:forest}[{LC:break(2)}]{END_LOOP:forest}
  out = [][1][][1][][1]
  cmt = LC:break(2)
+
+tmpl = {LOOP:forest}[{LC:.:break(2)}]{END_LOOP:forest}
+ out = [][1][][1][][1]
+ cmt = LC:.:break(2)
 
 tmpl = {LOOP:forest}[{LC:break(3)}]{END_LOOP:forest}
  out = [][][1][][][1]
@@ -192,6 +220,7 @@ tmpl = {LOOP:forest}[{LC:forest:break(7)}]{END_LOOP:forest}
 #---------------------------------------------------------------------
 # IF_LC/UNLESS_LC (no ELSE)
 
+cmt  = IF_LC:odd, UNLESS_LC:first
 tmpl = <<:chomp
 {LOOP:forest}{UNLESS_LC:first}{IF_LC:odd}
 {END_IF_LC:odd}{END_UNLESS_LC:first}Tree: {LVAR:tree}, Species: {LVAR:species}
@@ -207,8 +236,8 @@ Tree: maidenhair tree, Species: ginkgo biloba
 Tree: american beech, Species: fagus grandifolia
 Tree: american chestnut, Species: castanea dentata
 <<
-cmt = IF_LC:odd, UNLESS_LC:first
 
+cmt  = IF_LC:break(2), UNLESS_LC:last
 tmpl = <<:chomp
 {LOOP:forest}Tree: {LVAR:tree}, Species: {LVAR:species}
 {UNLESS_LC:last}{IF_LC:break(2)}
@@ -224,8 +253,8 @@ Tree: maidenhair tree, Species: ginkgo biloba
 Tree: american beech, Species: fagus grandifolia
 Tree: american chestnut, Species: castanea dentata
 <<
-cmt = IF_LC:break(2), UNLESS_LC:last
 
+cmt  = IF_LC:...:odd, UNLESS_LC:...:first
 tmpl = <<:chomp
 {LOOP:forest}{UNLESS_LC:forest:first}{IF_LC:forest:odd}
 {END_IF_LC:forest:odd}{END_UNLESS_LC:forest:first}Tree: {LVAR:tree}, Species: {LVAR:species}
@@ -241,8 +270,8 @@ Tree: maidenhair tree, Species: ginkgo biloba
 Tree: american beech, Species: fagus grandifolia
 Tree: american chestnut, Species: castanea dentata
 <<
-cmt = IF_LC:...:odd, UNLESS_LC:...:first
 
+cmt  = IF_LC:...:break(2), UNLESS_LC:...:last
 tmpl = <<:chomp
 {LOOP:forest}Tree: {LVAR:tree}, Species: {LVAR:species}
 {UNLESS_LC:forest:last}{IF_LC:forest:break(2)}
@@ -258,12 +287,12 @@ Tree: maidenhair tree, Species: ginkgo biloba
 Tree: american beech, Species: fagus grandifolia
 Tree: american chestnut, Species: castanea dentata
 <<
-cmt = IF_LC:...:break(2), UNLESS_LC:...:last
 
 tmpl = Trees: {LOOP:forest}{IF_LC:last}and {LVAR:tree}{ELSE}{LVAR:tree}, {END_IF_LC:last}{END_LOOP:forest}.
  out = Trees: trident maple, southern live oak, longleaf pine, maidenhair tree, american beech, and american chestnut.
  cmt = IF_LC:last with ELSE
 
+cmt  = IF_LC:last with ELSE, IF_LC:break(3) with ELSE, UNLESS_LC:last (nested)
 tmpl = <<:chomp
 Trees: {LOOP:forest}{IF_LC:last}and {LVAR:tree}{ELSE}{LVAR:tree},{IF_LC:break(3)}{UNLESS_LC:last}
 {END_UNLESS_LC:last}{ELSE} {END_IF_LC:break(3)}{END_IF_LC:last}{END_LOOP:forest}.
@@ -272,10 +301,10 @@ out = <<:chomp
 Trees: trident maple, southern live oak, longleaf pine,
 maidenhair tree, american beech, and american chestnut.
 <<
-cmt = IF_LC:last with ELSE, IF_LC:break(3) with ELSE, UNLESS_LC:last (nested)
 
 # the following shows explicitly which IF belongs to which ELSE ...
 
+cmt  = IF_LC:last with ELSE (explicit), IF_LC:break(3) with ELSE (explicit), UNLESS_LC:last (nested)
 tmpl = <<:chomp
 Trees: {LOOP:forest}{IF_LC:last}and {LVAR:tree}{ELSE_IF_LC:last}{LVAR:tree},{IF_LC:break(3)}{UNLESS_LC:last}
 {END_UNLESS_LC:last}{ELSE_IF_LC:break(3)} {END_IF_LC:break(3)}{END_IF_LC:last}{END_LOOP:forest}.
@@ -284,7 +313,6 @@ out = <<:chomp
 Trees: trident maple, southern live oak, longleaf pine,
 maidenhair tree, american beech, and american chestnut.
 <<
-cmt = IF_LC:last with ELSE (explicit), IF_LC:break(3) with ELSE (explicit), UNLESS_LC:last (nested)
 
 #---------------------------------------------------------------------
 # IF_LVAR/UNLESS_LVAR with ELSE
@@ -499,19 +527,19 @@ tmpl = {UNLESS_INI:loops:forest:999}Nope.{END_UNLESS_INI:loops:forest:999}
 #---------------------------------------------------------------------
 # IF_VAR/UNLESS_VAR with ELSE
 
-tmpl = {IF_VAR:test1}Yup.{ELSE}Nope.{END_IF_VAR:test1}
+tmpl = {IF_VAR:hey}Yup.{ELSE}Nope.{END_IF_VAR:hey}
  out = Yup.
  cmt = IF_VAR with ELSE, positive
 
-tmpl = {IF_VAR:test1}Yup.{ELSE_IF_VAR:test1}Nope.{END_IF_VAR:test1}
+tmpl = {IF_VAR:hey}Yup.{ELSE_IF_VAR:hey}Nope.{END_IF_VAR:hey}
  out = Yup.
  cmt = IF_VAR with ELSE (explicit), positive
 
-tmpl = {UNLESS_VAR:test1}Nope.{ELSE}Yup.{END_UNLESS_VAR:test1}
+tmpl = {UNLESS_VAR:hey}Nope.{ELSE}Yup.{END_UNLESS_VAR:hey}
  out = Yup.
  cmt = UNLESS_VAR with ELSE, positive
 
-tmpl = {UNLESS_VAR:test1}Nope.{ELSE_UNLESS_VAR:test1}Yup.{END_UNLESS_VAR:test1}
+tmpl = {UNLESS_VAR:hey}Nope.{ELSE_UNLESS_VAR:hey}Yup.{END_UNLESS_VAR:hey}
  out = Yup.
  cmt = UNLESS_VAR with ELSE (explicit), positive
 
@@ -534,11 +562,11 @@ tmpl = {UNLESS_VAR:test_null}Nope.{ELSE_UNLESS_VAR:test_null}Yup.{END_UNLESS_VAR
 #---------------------------------------------------------------------
 # IF_VAR/UNLESS_VAR (no ELSE)
 
-tmpl = {IF_VAR:test1}Yup.{END_IF_VAR:test1}
+tmpl = {IF_VAR:hey}Yup.{END_IF_VAR:hey}
  out = Yup.
  cmt = IF_VAR, positive
 
-tmpl = {UNLESS_VAR:test1}Nope.{END_UNLESS_VAR:test1}
+tmpl = {UNLESS_VAR:hey}Nope.{END_UNLESS_VAR:hey}
  out = ''  # no else
  cmt = UNLESS_VAR, positive
 
@@ -572,7 +600,7 @@ BEGIN {
 #---------------------------------------------------------------------
 # Testing ...
 
-$ini->set_var(  test1  => "Hey."                          );
+$ini->set_var(  hey    => "Hey."                          );
 $ini->set_loop( forest => $ini->get( loops => 'forest' )  );
 
 for ( 1 .. $num_tests ) {

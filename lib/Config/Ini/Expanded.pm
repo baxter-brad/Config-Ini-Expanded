@@ -776,7 +776,7 @@ sub _expand_loop {
 
             # first, expand nested loops
             $changes += $tval =~ 
-            s/{ LOOP: ($Var_rx) } (.*) { END_LOOP: \1 }
+            s/{ LOOP: ($Var_rx) } (.*?) { END_LOOP: \1 }
              /$self->_expand_loop(  # recurse
                  $2,                              # $value
                  $1,                              # $name
@@ -821,18 +821,15 @@ sub _expand_loop {
 
             if( ++$loops > $loop_limit or length $value > $size_limit ) {
                 my $suspect = '';
-                   $suspect = " ($1)" if $value =~  # XXX change these ...
+                   $suspect = " ($1)" if $value =~
                     /(?<!!) (
-                            {               VAR:  $Var_rx                          } |
-                            { (IF_|UNLESS_) VAR: ($Var_rx) } .*? { END_ \2 VAR: \3 } |
+                            {               LVAR:  $Var_rx                           } |
+                            { (IF_|UNLESS_) LVAR: ($Var_rx) } .*? { END_ \2 LVAR: \3 } |
 
-                            {               INI:  $Var_rx : $Var_rx (?: : $Var_rx )?                          } |
-                            { (IF_|UNLESS_) INI: ($Var_rx : $Var_rx (?: : $Var_rx )?) } .*? { END_ \4 INI: \5 } |
+                            {               LC:   (?: $Var_rx : )? $Var_rx                          } |
+                            { (IF_|UNLESS_) LC: ( (?: $Var_rx : )? $Var_rx ) } .*? { END_ \4 LC: \5 } |
 
                             {               LOOP: ($Var_rx) } .*? { END_LOOP: \6     } |
-                            { (IF_|UNLESS_) LOOP: ($Var_rx) } .*? { END_ \7 LOOP: \8 } |
-
-                            { FILE:  $Var_rx }
                             )/xs;
 
                 my $msg = "_expand_loop(): Loop alert$suspect:\n" .
