@@ -491,6 +491,7 @@ sub get_var {
 sub set_var {
     my ( $self, @vars ) = @_;
     return unless @vars;
+
     if( @vars == 1 ) {
         if( not defined $vars[0] ) {
             delete $self->[VAR];
@@ -556,6 +557,7 @@ sub set_loop {
 ## $ini->get_expanded( $section, $name, $i )
 sub get_expanded {
     my ( $self, $section, $name, $i ) = @_;
+
     my @ret = $self->get( $section, $name, $i );
     return unless @ret;
     for( @ret ) {
@@ -642,7 +644,7 @@ sub expand {
 
             my $msg = "expand(): Loop alert at [$section]=>$name$suspect:\n" .
                 ( ( length($value) > 44 )                            ?
-                substr( $value, 0, 44 ).'...('.length($value).')...' :
+                substr( $value, 0, 44 ).'...('.length($value).')('.$loops.')...' :
                 $value );
             croak $msg;
         }

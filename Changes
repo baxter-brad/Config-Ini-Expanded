@@ -1,5 +1,15 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.03 Fri Dec 18 21:07:54 EST 2009
+    - change $Config::Ini::Expanded::Encoding to $Config::Ini::Expanded::encoding
+    - add encoding() accessor
+    - add {LOOP...}, {LVAR...}, and {LC...} template placeholders
+    - add {IF...} and {UNLESS...} for VAR, INI, LOOP, LVAR, and LC
+    - added t/401-ini-expanded-loops-if-unless.t
+    - added t/402-ini-expanded-loops-more.t
+    - added t/403-ini-expanded-if-unless-else.t
+    - renamed some test files
+
 1.02 Fri Nov 13 16:11:11 EST 2009
     - add $Config::Ini::Expanded::Encoding and t/12-ini-expanded-encoding.t
 
