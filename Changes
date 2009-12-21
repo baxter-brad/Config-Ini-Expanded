@@ -1,5 +1,10 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.04 Mon Dec 21 11:40:10 EST 2009
+    - move POD to Config::Ini::Expanded::POD
+    - add "$loops" value to loop alert message
+    - add _disambiguate_else to properly disambiguate unqualified {ELSE} tags
+
 1.03 Fri Dec 18 21:07:54 EST 2009
     - change $Config::Ini::Expanded::Encoding to $Config::Ini::Expanded::encoding
     - add encoding() accessor

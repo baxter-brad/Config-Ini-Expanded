@@ -173,7 +173,8 @@ out = <<:chomp
  acer buergerianum quercus virginiana pinus palustris ginkgo biloba fagus grandifolia castanea dentata
 <<
 
-# this (dumb) example does not require the ELSE to be explict
+# this example is important to properly exercise the regex used
+# for _disambiguate_else()
 
 cmt  = UNLESS_LVAR, IF_LVAR, positive
 tmpl = <<:join:chomp

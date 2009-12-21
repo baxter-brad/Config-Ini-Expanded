@@ -43,4 +43,5 @@ t/401-ini-expanded-loops-if-unless.t
 t/402-ini-expanded-loops-more.t
 t/403-ini-expanded-if-unless-else.t
 lib/Config/Ini/Expanded.pm
+lib/Config/Ini/Expanded/POD.pm
 META.yml                                 Module meta-data (added by MakeMaker)
