@@ -183,10 +183,10 @@ sub init {
     my $keep_comments = $self->keep_comments();
     my $interpolates  = $self->interpolates();
     my $expands       = $self->expands();
-    my $include_root  = $self->include_root();
     my $encoding      = $self->encoding();
+    my $include_root  = $self->include_root();
     $self->include_root( $include_root )
-        if $include_root =~ s'/+$'';
+        if $include_root =~ s'/+$'';  # strip trailing slash(es)
 
     unless( $fh ) {
         if( $string ) {
@@ -207,26 +207,31 @@ sub init {
     my %i;
     my $resingle = qr/' (?:  '' | [^'] )* '/x;
     my $redouble = qr/" (?: \\" | [^"] )* "/x;
-    my $requoted = qr/ $resingle|$redouble /x;
+    my $requoted = qr/ $resingle|$redouble /xo;
 
     local *_;
     while( <$fh> ) {
-        my $parse  = '';
-        my $escape = '';
-        my $json   = '';
+        my $parse   = '';
+        my $escape  = '';
+        my $json    = '';
         my $heredoc = '';
-        my $q = '';
+        my $q       = '';
+
+        #-------------------------------------------------------------
+        # parse each line for comments, sections, and $name = $value
+        # (no interpolations or expansions yet)
+        # also get INCLUDE's (already interpolated/expanded)
 
         # comment or blank line
-        if( /^\s*[#;]/ or /^\s*$/ ) {
+        if( /^ \s* [#;] /x or /^ \s* $/x ) {
             next unless $keep_comments;
             $pending_comments .= $_;
             next;
         }
 
         # [section]
-        if( /^\[([^\]]*)\](\s*[#;].*\s*)?/ ) {
-            $section = $1;
+        if( /^ \[ ( [^\]]* ) \] ( \s* [#;] .* \s* )? /x ) {
+            $section    = $1;
             my $comment = $2;
             $self->_autovivify( $section );
             next unless $keep_comments;
@@ -241,45 +246,46 @@ sub init {
         # <<heredoc
         # Note: name = {xyz} <<xyz>> must not be seen as a heredoc
         elsif(
-            /^\s*($requoted)(\s*[=:]\s*)(<<|{)\s*([^}>]*?)\s*$/ or
-            /^\s*(.+?)(\s*[=:]\s*)(<<|{)\s*([^}>]*?)\s*$/ ) {
-            $name       = $1;
+            /^ \s* ($requoted) (\s* [=:] \s*) (<<|{) \s* ([^}>] *?) \s* $/xo or
+            /^ \s* (.+?)       (\s* [=:] \s*) (<<|{) \s* ([^}>] *?) \s* $/x  ) {
+            $name            = $1;
             $vattr{'equals'} = $2;
-            my $style   = $3;
-            my $heretag = $4;
+            my $style        = $3;
+            my $heretag      = $4;
+            ( $q, $heretag, $comment ) = ( $1, $2, $3 )
+               if $heretag =~ /^ (['"]) (.*) \1 (\s* [#;] .*)? /x;
+
+            my $extra = '';
+            my $indented    = ($heretag =~ s/ \s*  :indented \s* //x) ? 1  : '';
+            my $join        = ($heretag =~ s/ \s*  :join     \s* //x) ? 1  : '';
+            my $chomp       = ($heretag =~ s/ \s*  :chomp    \s* //x) ? 1  : '';
+            $json           = ($heretag =~ s/ \s* (:json)    \s* //x) ? $1 : '';
+            $escape        .= ($heretag =~ s/ \s* (:html)    \s* //x) ? $1 : '';
+            $escape        .= ($heretag =~ s/ \s* (:slash)   \s* //x) ? $1 : '';
+            $parse  = $1    if $heretag =~ s/ \s*  :parse    \s* \( \s* (.*?) \s* \) \s* //x;
+            $parse  = '\n'  if $heretag =~ s/ \s*  :parse    \s* //x;
+            $extra .= $1 while $heretag =~ s/ \s* (:\w+)     \s* //x; # strip unrecognized (future?) modifiers
 
             $value = '';
-
             my $endtag = $style eq '{' ? '}' : '<<';
-
-            ( $q, $heretag, $comment ) = ( $1, $2, $3 )
-                if $heretag =~ /^(['"])(.*)\1(\s*[#;].*)?/;
-            my $indented = ($heretag =~ s/\s*:indented\s*//i ) ? 1 : '';
-            my $join     = ($heretag =~ s/\s*:join\s*//i )     ? 1 : '';
-            my $chomp    = ($heretag =~ s/\s*:chomp\s*//i)     ? 1 : '';
-            $json   = ($heretag =~ s/\s*(:json)\s*//i)  ? $1 : '';
-            $escape .= ($heretag =~ s/\s*(:html)\s*//i)  ? $1 : '';
-            $escape .= ($heretag =~ s/\s*(:slash)\s*//i) ? $1 : '';
-            $parse = $1   if $heretag =~ s/\s*:parse\s*\(\s*(.*?)\s*\)\s*//;
-            $parse = '\n' if $heretag =~ s/\s*:parse\s*//;
-            my $extra = '';  # strip unrecognized (future?) modifiers
-            $extra .= $1 while $heretag =~ s/\s*(:\w+)\s*//;
-
             my $found_end;
+
             while( <$fh> ) {
+
                 if( $heretag eq '' ) {
-                    if( /^\s*$endtag\s*$/ ) {
+                    if( /^ \s* $endtag \s* $/x ) {
                         $style .= $endtag;
                         ++$found_end;
                     }
                 }
+
                 else {
-                    if( ( /^\s*\Q$heretag\E\s*$/ ||
-                        /^\s*$q\Q$heretag\E$q\s*$/ ) ) {
+                    if( /^ \s*    \Q$heretag\E    \s* $/x ||
+                        /^ \s* $q \Q$heretag\E $q \s* $/x ){
                         ++$found_end;
                     }
-                    elsif( ( /^\s*$endtag\s*\Q$heretag\E\s*$/ ||
-                        /^\s*$endtag\s*$q\Q$heretag\E$q\s*$/ ) ) {
+                    elsif( /^ \s* $endtag \s*    \Q$heretag\E    \s* $/x ||
+                           /^ \s* $endtag \s* $q \Q$heretag\E $q \s* $/x ){
                         $style .= $endtag;
                         ++$found_end;
                     }
@@ -287,11 +293,14 @@ sub init {
 
                 last         if $found_end;
                 chomp $value if $join;
+
+                # XXX need to explain this:
                 if( $indented ) {
-                    if( s/^(\s+)// ) {
+                    if( s/^ (\s+) //x ) {
                         $indented = $1 if $indented !~ /^\s+$/;
                     }
                 }
+
                 $value .= $_;
 
             }  # while
@@ -318,22 +327,33 @@ sub init {
         }  # elsif (heredoc)
 
         # {INCLUDE:file:sections}
-        elsif( /^\s*{INCLUDE:([^:{}]+)(?::([^:{}]+))*}/ ) {
+        elsif( /^ \s* { INCLUDE: ( [^:{}]+ ) (?: : ([^:{}]+) )* } /x ) {
             my ( $file, $sections ) = ( $1, $2 );
+
+            # checks for security
             croak "INCLUDE not allowed."
-                if !$include_root or
-                    $include_root =~ m,^/+$, or
-                    $file =~ m,\.\.,;
-            $file =~ s'^/+'';
-            $file = "$include_root/$file";
-            next if $included->{ $file }++;
+                if !$include_root                or  # no include root
+                    $include_root =~ m'^ /+ $'x  or  # is root? '/'
+                    $file         =~ m' \.\. 'x;     # file contains '..'
+
+            $file =~ s'^ /+ ''x;             # remove leading slash
+            $file = "$include_root/$file";   # put it back
+            next if $included->{ $file }++;  # only include a file once
+                                             # (avoids include loops)
+
             my $ini = Config::Ini::Expanded->new(
                 include_root => $include_root,
                 file         => $file,
                 included     => $included );
-            my @sections = $sections     ?
-                split(/[, ]+/,$sections) :
+
+            my @sections = $sections        ?
+                split( /[, ]+/, $sections ) :
                 $ini->get_sections();
+
+            # merge that one into this one
+            # note: we're not keeping comments, attributes, etc.
+            #       from the included file
+
             foreach my $section ( @sections ) {
                 foreach my $name ( $ini->get_names( $section ) ) {
                     $self->add( $section, $name,
@@ -344,41 +364,52 @@ sub init {
         }
 
         # "name" = value
-        elsif( /^\s*($requoted)(\s*[=:]\s*)(.*)$/ ) {
-            $name = $1;
+        elsif( /^ \s* ($requoted) (\s* [=:] \s*) (.*) $/xo ) {
+            $name            = $1;
             $vattr{'equals'} = $2;
-            $value = $3;
+            $value           = $3;  # may contain comment
             $vattr{'nquote'} = substr $name, 0, 1;
         }
 
         # name = value
-        elsif( /^\s*(.+?)(\s*[=:]\s*)(.*)$/ ) {
-            $name = $1;
+        elsif( /^ \s* (.+?) (\s* [=:] \s*) (.*) $/x ) {
+            $name            = $1;
             $vattr{'equals'} = $2;
-            $value = $3;
+            $value           = $3;  # may contain comment
         }
 
         # "bare word" (treated as boolean set to true(1))
         else {
-            s/^\s+//g; s/\s+$//g;
-            $name = $_;
-            $value = 1;
+            s/^\s+//g; s/\s+$//g;  # strip blanks
+            $name  = $_;
+            $value = 1;  # may contain comment
         }
+
+        # Here, we're saying that this ini file may not set
+        # (i.e., override) the named option, because it may
+        # only be set in a "parent" ini file.  So we simply
+        # loop back to get a new line without adding this
+        # name/value to this ini object
 
         if( $inherits and $no_override ) {
             if( $no_override->{ $section }{ $name } ) {
-                # possible future feature ...
+
+                # XXX possible future feature ...
                 # croak "Section:$section/Name:$name may not be overridden"
                 #     if $Config::Ini::Expanded::die_on_override;
+
                 next;
             }
         }
 
+        #-------------------------------------------------------------
+        # now parse, interpolate, expand, json-ize, etc.
+
         my $quote = sub {
             my( $v, $q, $escape ) = @_;
-            if( $q eq "'" ) { return &parse_single_quoted }
+            if( $q eq "'" ) { return &parse_single_quoted }  # note &
             else {
-                $v = &parse_double_quoted;
+                $v = &parse_double_quoted;                   # note &
                 return $self->expand( $v )      if $expands;
                 return $self->interpolate( $v ) if $interpolates;
                 return $v; }
@@ -393,36 +424,44 @@ sub init {
                     $value = $self->interpolate( $value ) }
             }
         }
-        elsif( $value =~ /^($requoted)(\s*[#;].*)?$/ ) {
-            my $q = substr $1, 0, 1;
-            $value = $quote->( $1, $q, $escape );
+
+        elsif( $value =~ /^ ($requoted) ( \s* [#;] .* )? $/xo ) {
+            my $quoted      = $1;
+            $comment        = $2 if $2 and $keep_comments;
+            my $q           = substr $quoted, 0, 1;
             $vattr{'quote'} = $q;
-            $comment = $2 if $2 and $keep_comments;
+            $value          = $quote->( $quoted, $q, $escape );
         }
 
-        # to allow "{INI:general:self}" = some value
+        # the following allows for "{INI:general:setting}" = some value
         # or "A rose,\n\tby another name,\n" = smells as sweet
-        if( $name =~ /^(['"]).*\1$/sm ) {
+
+        if( $name =~ /^ (['"]) .* \1 $/x ) {
             $name = $quote->( $name, $1 );
         }
 
         $vattr{'comment'} = $comment if $comment;
         $comment = '';
 
+        # Note: this implies :parse or :json, not both ...
+
         if( $parse ne '' ) {
             $parse = $quote->( $parse, $1 )
-                if $parse =~ m,^(['"/]).*\1$,;
+                if $parse =~ m{^ ( ['"/] ) .* \1 $}x;
+
+            # this may parse into multiple values
             $self->add( $section, $name,
                 map { (defined $_) ? $_ : '' }
                 parse_line( $parse, 0, $value ) );
         }
         else {
             $value = jsonToObj $value if $json;
+
             $self->add( $section, $name, $value );
-            $self->vattr( $section, $name, $i{ $section }{ $name },
-                %vattr ) if %vattr;
         }
 
+        $self->vattr( $section, $name, $i{ $section }{ $name },
+            %vattr ) if %vattr;
         %vattr = ();
 
         if( $pending_comments ) {
@@ -445,15 +484,26 @@ sub init {
 ## $ini->get( $section, $name, $i )
 sub get {
     my ( $self, $section, $name, $i ) = @_;
+
     return unless defined $section;
+
+    # i.e., $ini->get( $name ); (get name from null section)
     ( $name = $section, $section = '' ) unless defined $name;
+
+    # if not defined here, try to inherit ...
+    #     (need to test like this to avoid autovivifications)
     unless(
         exists $self->[SHASH]{ $section } and
         exists $self->[SHASH]{ $section }[NHASH]{ $name } ) {
+
         return unless $self->inherits();
+
+        # check for prohibitions
         if( my $no_inherit = $self->no_inherit() ) {
             return if $no_inherit->{ $section }{ $name };
         }
+
+        # now try to inherit
         for my $ini ( @{$self->inherits()} ) {
             if( wantarray ) {
                 my @try = $ini->get( $section, $name, $i );  # recurse
@@ -464,11 +514,18 @@ sub get {
                 return $try if defined $try;
             }
         }
-        return;
+
+        return;  # i.e., not found in parents
     }
+
     my $aref = $self->[SHASH]{ $section }[NHASH]{ $name }[VALS];
-    return $aref->[ $i ] if defined $i;
-    return @$aref if wantarray;
+
+    return   $aref->[ $i ] if defined $i;  # requested an occurence
+    return  @$aref         if wantarray;   # want all occurences
+
+    # Note, if there's just one, it could be a reference
+    # (e.g., from :json), which is why we don't just "@$aref" it
+
     return @$aref == 1 ? $aref->[ 0 ]: "@$aref";
 }
 
@@ -476,15 +533,23 @@ sub get {
 ## $ini->get_var( $var )
 sub get_var {
     my ( $self, $var ) = @_;
-    unless( defined $self->[VAR] and defined $self->[VAR]{$var} ) {
+
+    # if not defined here, try to inherit ...
+    unless( defined $self->[VAR]       and
+            defined $self->[VAR]{$var} ) {
+
         return unless $self->inherits();
-        # note that no_inherit does not apply here ...
+
+        # now try to inherit
+        #     (note that no_inherit does not apply here)
         for my $ini ( @{$self->inherits()} ) {
             my $try = $ini->get_var( $var );  # recurse
             return $try if defined $try;
         }
-        return;
+
+        return;  # i.e., not found in parents
     }
+
     return $self->[VAR]{$var};
 }
 
@@ -492,6 +557,7 @@ sub get_var {
 ## $ini->set_var( $var, $value, ... )
 sub set_var {
     my ( $self, @vars ) = @_;
+
     return unless @vars;
 
     if( @vars == 1 ) {
@@ -507,7 +573,9 @@ sub set_var {
         }
         return;
     }
+
     croak "set_var(): Odd number of parms." if @vars % 2;
+
     while( @vars ) {
         my $key = shift @vars;
         $self->[VAR]{$key} = shift @vars;
@@ -518,15 +586,22 @@ sub set_var {
 ## $ini->get_loop( $loop )
 sub get_loop {
     my ( $self, $loop ) = @_;
-    unless( defined $self->[LOOP] and defined $self->[LOOP]{$loop} ) {
+
+    unless( defined $self->[LOOP]        and
+            defined $self->[LOOP]{$loop} ) {
+
         return unless $self->inherits();
-        # note that no_inherit does not apply here ...
+
+        # now try to inherit
+        #     (note that no_inherit does not apply here)
         for my $ini ( @{$self->inherits()} ) {
             my $try = $ini->get_loop( $loop );  # recurse
             return $try if defined $try;
         }
-        return;
+
+        return;  # i.e., not found in parents
     }
+
     return $self->[LOOP]{$loop};
 }
 
@@ -534,7 +609,9 @@ sub get_loop {
 ## $ini->set_loop( $loop, $value, ... )
 sub set_loop {
     my ( $self, @loops ) = @_;
+
     return unless @loops;
+
     if( @loops == 1 ) {
         if( not defined $loops[0] ) {
             delete $self->[LOOP];
@@ -548,7 +625,9 @@ sub set_loop {
         }
         return;
     }
+
     croak "set_loop(): Odd number of parms." if @loops % 2;
+
     while( @loops ) {
         my $key = shift @loops;
         $self->[LOOP]{$key} = shift @loops;
@@ -562,9 +641,13 @@ sub get_expanded {
 
     my @ret = $self->get( $section, $name, $i );
     return unless @ret;
-    for( @ret ) {
-        $_ = $self->expand( $_, $section, $name ) };
-    return @ret if wantarray;
+
+    for( @ret ) { $_ = $self->expand( $_, $section, $name ) }
+
+    return  @ret  if wantarray;
+
+    # XXX what about refs? (e.g., :json)
+
     return "@ret";
 }
 
@@ -599,55 +682,55 @@ sub expand {
                           ($Var_rx (?: : $Var_rx (?: : $Var_rx )? )? ) } )  # $1
                           ( .*? )                    # $5
                           ( { END_ \2 _ \3 : \4 } )  # $6
-                          /$self->_disambiguate_else( $2, $3, $4, $5, $1, $6 )/gexs;
+                          /$self->_disambiguate_else( $2, $3, $4, $5, $1, $6 )/goxes;
         }
 
         $changes += $value =~
-            s/ (?<!!) { IF_VAR:               ($Var_rx) } (.*?)     # $2
-                  (?: { ELSE (?: _IF_VAR:     \1 )?     } (.*?) )?  # $3
-                      { END_IF_VAR:           \1        }
-                      /$self->get_var( $1 )? $2: $3/gexs;
+            s/ (?<!!) { IF_VAR:      ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE_IF_VAR: \1        } (.*?) )?  # $3
+                      { END_IF_VAR:  \1        }
+                      /$self->get_var( $1 )? $2: $3/goxes;
         $changes += $value =~
-            s/ (?<!!) { UNLESS_VAR:           ($Var_rx) } (.*?)     # $2
-                  (?: { ELSE (?: _UNLESS_VAR: \1 )?     } (.*?) )?  # $3
-                      { END_UNLESS_VAR:       \1        }
-                      /$self->get_var( $1 )? $3: $2/gexs;
+            s/ (?<!!) { UNLESS_VAR:      ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE_UNLESS_VAR: \1        } (.*?) )?  # $3
+                      { END_UNLESS_VAR:  \1        }
+                      /$self->get_var( $1 )? $3: $2/goxes;
 
         $changes += $value =~
-            s/ (?<!!) { IF_INI:               ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )?    } (.*?)     # $4
-                  (?: { ELSE (?: _IF_INI:     \1        : \2        (?: : \3        )? )? } (.*?) )?  # $5
-                      { END_IF_INI:           \1        : \2        (?: : \3        )?    }
-                      /$self->get( $1, $2, $3 )? $4: $5/gexs;
+            s/ (?<!!) { IF_INI:      ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? } (.*?)     # $4
+                  (?: { ELSE_IF_INI: \1        : \2        (?: : \3        )? } (.*?) )?  # $5
+                      { END_IF_INI:  \1        : \2        (?: : \3        )? }
+                      /$self->get( $1, $2, $3 )? $4: $5/goxes;
         $changes += $value =~
-            s/ (?<!!) { UNLESS_INI:           ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )?    } (.*?)     # $4
-                  (?: { ELSE (?: _UNLESS_INI: \1        : \2        (?: : \3        )? )? } (.*?) )?  # $5
-                      { END_UNLESS_INI:       \1        : \2        (?: : \3        )?    }
-                      /$self->get( $1, $2, $3 )? $5: $4/gexs;
+            s/ (?<!!) { UNLESS_INI:      ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? } (.*?)     # $4
+                  (?: { ELSE_UNLESS_INI: \1        : \2        (?: : \3        )? } (.*?) )?  # $5
+                      { END_UNLESS_INI:  \1        : \2        (?: : \3        )? }
+                      /$self->get( $1, $2, $3 )? $5: $4/goxes;
 
         $changes += $value =~
-            s/ (?<!!) { IF_LOOP:               ($Var_rx) } (.*?)     # $2
-                  (?: { ELSE (?: _IF_LOOP:     \1)?      } (.*?) )?  # $3
-                      { END_IF_LOOP:           \1        }
-                      /$self->get_loop( $1 )? $2: $3/gexs;
+            s/ (?<!!) { IF_LOOP:      ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE_IF_LOOP: \1        } (.*?) )?  # $3
+                      { END_IF_LOOP:  \1        }
+                      /$self->get_loop( $1 )? $2: $3/goxes;
         $changes += $value =~
-            s/ (?<!!) { UNLESS_LOOP:           ($Var_rx) } (.*?)     # $2
-                  (?: { ELSE (?: _UNLESS_LOOP: \1)?      } (.*?) )?  # $3
-                      { END_UNLESS_LOOP:       \1        }
-                      /$self->get_loop( $1 )? $3: $2/gexs;
+            s/ (?<!!) { UNLESS_LOOP:      ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE_UNLESS_LOOP: \1        } (.*?) )?  # $3
+                      { END_UNLESS_LOOP:  \1        }
+                      /$self->get_loop( $1 )? $3: $2/goxes;
 
         $changes += $value =~
             s/ (?<!!) { VAR: ($Var_rx) }
-                      /$self->get_var( $1 )/gex;
+                      /$self->get_var( $1 )/goxe;
         $changes += $value =~
             s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-                      /$self->get( $1, $2, $3 )/gex;
+                      /$self->get( $1, $2, $3 )/goxe;
         $changes += $value =~
             s/ (?<!!) { LOOP: ($Var_rx) } (.*?)  # $2
                       { END_LOOP: \1    }
-                      /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/gexs;
+                      /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/goxes;
         $changes += $value =~
             s/ (?<!!) { FILE: ($Var_rx) }
-                      /$self->_readfile( $1 )/gex;
+                      /$self->_readfile( $1 )/goxe;
 
         last unless $changes;
 
@@ -665,7 +748,7 @@ sub expand {
                         { (IF_|UNLESS_) LOOP: ($Var_rx) } .*? { END_ \7 LOOP: \8 } |
 
                         { FILE:  $Var_rx }
-                        )/xs;
+                        )/oxs;
 
             my $msg = "expand(): Loop alert at [$section]=>$name$suspect:\n" .
                 ( ( length($value) > 44 )                            ?
@@ -684,22 +767,22 @@ sub expand {
     # postponed loop would not have been expanded yet.
 
     for( $value ) {
-        s/ !( {               VAR:   $Var_rx                           } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) VAR:  ($Var_rx) } .*? { END_ \2 VAR: \3  } ) /$1/gxs;
+        s/ !( {               VAR:   $Var_rx                           } ) /$1/gox;
+        s/ !( { (IF_|UNLESS_) VAR:  ($Var_rx) } .*? { END_ \2 VAR: \3  } ) /$1/goxs;
 
-        s/ !( {               INI:   $Var_rx : $Var_rx (?: : $Var_rx )?                          } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) INI:  ($Var_rx : $Var_rx (?: : $Var_rx )?) } .*? { END_ \2 INI: \3 } ) /$1/gxs;
+        s/ !( {               INI:   $Var_rx : $Var_rx (?: : $Var_rx )?                          } ) /$1/gox;
+        s/ !( { (IF_|UNLESS_) INI:  ($Var_rx : $Var_rx (?: : $Var_rx )?) } .*? { END_ \2 INI: \3 } ) /$1/goxs;
 
-        s/ !( {               LOOP: ($Var_rx) } .*? { END_    LOOP: \2 } ) /$1/gxs;
-        s/ !( { (IF_|UNLESS_) LOOP: ($Var_rx) } .*? { END_ \2 LOOP: \3 } ) /$1/gxs;
+        s/ !( {               LOOP: ($Var_rx) } .*? { END_    LOOP: \2 } ) /$1/goxs;
+        s/ !( { (IF_|UNLESS_) LOOP: ($Var_rx) } .*? { END_ \2 LOOP: \3 } ) /$1/goxs;
 
-        s/ !( {               LVAR:  $Var_rx                           } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) LVAR: ($Var_rx) } .*? { END_ \2 LVAR: \3 } ) /$1/gxs;
+        s/ !( {               LVAR:  $Var_rx                           } ) /$1/gox;
+        s/ !( { (IF_|UNLESS_) LVAR: ($Var_rx) } .*? { END_ \2 LVAR: \3 } ) /$1/goxs;
 
-        s/ !( {               LC:    $Var_rx : $Var_rx                         } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) LC:   ($Var_rx : $Var_rx) } .*? { END_ \2 LC: \3 } ) /$1/gx;
+        s/ !( {               LC:    $Var_rx : $Var_rx                         } ) /$1/gox;
+        s/ !( { (IF_|UNLESS_) LC:   ($Var_rx : $Var_rx) } .*? { END_ \2 LC: \3 } ) /$1/gox;
 
-        s/ !( { FILE:  $Var_rx } ) /$1/gx;
+        s/ !( { FILE:  $Var_rx } ) /$1/gox;
     }
 
     return $value;
@@ -814,39 +897,39 @@ sub _expand_loop {
                  $find_loop->( $1, $loop_href ),  # $loop_aref
                  [ $loop_href, @$loop_hrefs ],    # $loop_hrefs
                  [ $counter,   @$counters   ]     # $counters
-                 )/gexs;
+                 )/goxes;
  
             # then the loop variables
             $changes += $tval =~ 
             s/ (?<!!) { LVAR: ($Var_rx) }
-                      /$find_lvar->( $1, $loop_href )/gex;
+                      /$find_lvar->( $1, $loop_href )/goxe;
 
             $changes += $tval =~ 
-            s/ (?<!!) { IF_LVAR:               ($Var_rx) } (.*?)     # $2
-                  (?: { ELSE (?: _IF_LVAR:     \1 )?     } (.*?) )?  # $3
-                      { END_IF_LVAR:           \1        }
-                      /$find_lvar->( $1, $loop_href )? $2: $3/gexs;
+            s/ (?<!!) { IF_LVAR:      ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE_IF_LVAR: \1        } (.*?) )?  # $3
+                      { END_IF_LVAR:  \1        }
+                      /$find_lvar->( $1, $loop_href )? $2: $3/goxes;
             $changes += $tval =~ 
-            s/ (?<!!) { UNLESS_LVAR:           ($Var_rx) } (.*?)     # $2
-                  (?: { ELSE (?: _UNLESS_LVAR: \1 )?     } (.*?) )?  # $3
-                      { END_UNLESS_LVAR:       \1        }
-                      /$find_lvar->( $1, $loop_href )? $3: $2/gexs;
+            s/ (?<!!) { UNLESS_LVAR:      ($Var_rx) } (.*?)     # $2
+                  (?: { ELSE_UNLESS_LVAR: \1        } (.*?) )?  # $3
+                      { END_UNLESS_LVAR:  \1        }
+                      /$find_lvar->( $1, $loop_href )? $3: $2/goxes;
 
             # and the loop context values
             $changes += $tval =~ 
             s/ (?<!!) { LC: (?: ($Var_rx) : )? ($Var_rx) }
-                      /$loop_context->( $1, $2 )/gexs;
+                      /$loop_context->( $1, $2 )/goxes;
 
             $changes += $tval =~ 
-            s/ (?<!!) { IF_LC:               (?: ($Var_rx) : )? ($Var_rx) } (.*?)     # $3
-                  (?: { ELSE (?: _IF_LC:     (?: \1        : )? \2 )?     } (.*?) )?  # $4
-                      { END_IF_LC:           (?: \1        : )? \2        }
-                      /$loop_context->( $1, $2 )? $3: $4/gexs;
+            s/ (?<!!) { IF_LC:      (?: ($Var_rx) : )? ($Var_rx) } (.*?)     # $3
+                  (?: { ELSE_IF_LC: (?: \1        : )? \2        } (.*?) )?  # $4
+                      { END_IF_LC:  (?: \1        : )? \2        }
+                      /$loop_context->( $1, $2 )? $3: $4/goxes;
             $changes += $tval =~ 
-            s/ (?<!!) { UNLESS_LC:           (?: ($Var_rx) : )? ($Var_rx) } (.*?)     # $3
-                  (?: { ELSE (?: _UNLESS_LC: (?: \1        : )? \2 )?     } (.*?) )?  # $4
-                      { END_UNLESS_LC:       (?: \1        : )? \2        }
-                      /$loop_context->( $1, $2 )? $4: $3/gexs;
+            s/ (?<!!) { UNLESS_LC:      (?: ($Var_rx) : )? ($Var_rx) } (.*?)     # $3
+                  (?: { ELSE_UNLESS_LC: (?: \1        : )? \2        } (.*?) )?  # $4
+                      { END_UNLESS_LC:  (?: \1        : )? \2        }
+                      /$loop_context->( $1, $2 )? $4: $3/goxes;
 
             last unless $changes;
 
@@ -861,7 +944,7 @@ sub _expand_loop {
                             { (IF_|UNLESS_) LC: ( (?: $Var_rx : )? $Var_rx ) } .*? { END_ \4 LC: \5 } |
 
                             {               LOOP: ($Var_rx) } .*? { END_LOOP: \6     } |
-                            )/xs;
+                            )/oxs;
 
                 my $msg = "_expand_loop(): Loop alert$suspect:\n" .
                     ( ( length($value) > 44 )                            ?
@@ -890,7 +973,7 @@ sub _expand_loop {
 #      next time the ELSE is seen.
 # [3]: If there is an extraneous unqualifed {ELSE}, i.e., one that
 #      is in the same IF/UNLESS block as that block's qualified
-#      {ELSE...}, the unqualified {ELSE} is left alone (i.e., it's
+#      {ELSE...}, the unqualified {ELSE} is left alone--(i.e., it's
 #      not necessarily an error)--whatever the order it appears.
 
 sub _disambiguate_else {
@@ -898,12 +981,12 @@ sub _disambiguate_else {
 
     # first, expand nested IF/UNLESS's by recursing
     $inner =~ 
-        s/ (?<!!) ( { (IF|UNLESS) _ ([A-Z]+) : ($Var_rx (?: : $Var_rx (?: : $Var_rx )? )? ) } )  # $1
-                  ( .*? )                    # $5
-                  ( { END_ \2 _ \3 : \4 } )  # $6
-                  /$self->_disambiguate_else( $2, $3, $4, $5, $1, $6 )/gexs;
+        s/ (?<!!) ( { (IF|UNLESS) _ ([A-Z]+) : ($Var_rx (?: : $Var_rx (?: : $Var_rx )? )? ) } )  # $1 (begin)
+                  ( .*? )                    # $5 (inner)
+                  ( { END_ \2 _ \3 : \4 } )  # $6 (end)
+                  /$self->_disambiguate_else( $2, $3, $4, $5, $1, $6 )/goxes;
 
-    # now look for any left over unqualifed ELSE
+    # now look for any remaining unqualifed ELSE
     if( $inner =~ /{ELSE}/ ) {
 
         # [1]: disambiguate the ELSE
@@ -922,10 +1005,16 @@ sub _disambiguate_else {
 ## $ini->get_interpolated( $section, $name, $i )
 sub get_interpolated {
     my ( $self, $section, $name, $i ) = @_;
+
     my @ret = $self->get( $section, $name, $i );
     return unless @ret;
+
     for( @ret ) { $_ = $self->interpolate( $_ ) };
+
     return @ret if wantarray;
+
+    # XXX what about refs? (e.g., :json)
+
     return "@ret";
 }
 
@@ -933,62 +1022,63 @@ sub get_interpolated {
 ## $ini->interpolate( $value )
 sub interpolate {
     my( $self, $value ) = @_;
+
     for ( $value ) {  no warnings 'uninitialized';
 
-        s/ (?<!!) { IF_VAR:               ($Var_rx) } (.*?)     # $2
-              (?: { ELSE (?: _IF_VAR:     \1 )?     } (.*?) )?  # $3
-                  { END_IF_VAR:           \1        }
-                  /$self->get_var( $1 )? $2: $3/gexs;
-        s/ (?<!!) { UNLESS_VAR:           ($Var_rx) } (.*?)     # $2
-              (?: { ELSE (?: _UNLESS_VAR: \1 )?     } (.*?) )?  # $3
-                  { END_UNLESS_VAR:       \1        }
-                  /$self->get_var( $1 )? $3: $2/gexs;
+        s/ (?<!!) { IF_VAR:          ($Var_rx) } (.*?)     # $2
+              (?: { ELSE_IF_VAR:     \1        } (.*?) )?  # $3
+                  { END_IF_VAR:      \1        }
+                  /$self->get_var( $1 )? $2: $3/goxes;
+        s/ (?<!!) { UNLESS_VAR:      ($Var_rx) } (.*?)     # $2
+              (?: { ELSE_UNLESS_VAR: \1        } (.*?) )?  # $3
+                  { END_UNLESS_VAR:  \1        }
+                  /$self->get_var( $1 )? $3: $2/goxes;
 
-        s/ (?<!!) { IF_INI:               ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )?    } (.*?)     # $4
-              (?: { ELSE (?: _IF_INI:     \1        : \2        (?: : \3        )? )? } (.*?) )?  # $5
-                  { END_IF_INI:           \1        : \2        (?: : \3        )?    }
-                  /$self->get( $1, $2, $3 )? $4: $5/gexs;
-        s/ (?<!!) { UNLESS_INI:           ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )?    } (.*?)     # $4
-              (?: { ELSE (?: _UNLESS_INI: \1        : \2        (?: : \3        )? )? } (.*?) )?  # $5
-                  { END_UNLESS_INI:       \1        : \2        (?: : \3        )? }
-                  /$self->get( $1, $2, $3 )? $5: $4/gexs;
+        s/ (?<!!) { IF_INI:          ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? } (.*?)     # $4
+              (?: { ELSE_IF_INI:     \1        : \2        (?: : \3        )? } (.*?) )?  # $5
+                  { END_IF_INI:      \1        : \2        (?: : \3        )? }
+                  /$self->get( $1, $2, $3 )? $4: $5/goxes;
+        s/ (?<!!) { UNLESS_INI:      ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? } (.*?)     # $4
+              (?: { ELSE_UNLESS_INI: \1        : \2        (?: : \3        )? } (.*?) )?  # $5
+                  { END_UNLESS_INI:  \1        : \2        (?: : \3        )? }
+                  /$self->get( $1, $2, $3 )? $5: $4/goxes;
 
-        s/ (?<!!) { IF_LOOP:               ($Var_rx) } (.*?)     # $2
-              (?: { ELSE (?: _IF_LOOP:     \1 )?     } (.*?) )?  # $3
-                  { END_IF_LOOP:           \1        }
-                  /$self->get_loop( $1 )? $2: $3/gexs;
-        s/ (?<!!) { UNLESS_LOOP:           ($Var_rx) } (.*?)     # $2
-              (?: { ELSE (?: _UNLESS_LOOP: \1 )?     } (.*?) )?  # $3
-                  { END_UNLESS_LOOP:       \1        }
-                  /$self->get_loop( $1 )? $3: $2/gexs;
+        s/ (?<!!) { IF_LOOP:          ($Var_rx) } (.*?)     # $2
+              (?: { ELSE_IF_LOOP:     \1        } (.*?) )?  # $3
+                  { END_IF_LOOP:      \1        }
+                  /$self->get_loop( $1 )? $2: $3/goxes;
+        s/ (?<!!) { UNLESS_LOOP:      ($Var_rx) } (.*?)     # $2
+              (?: { ELSE_UNLESS_LOOP: \1        } (.*?) )?  # $3
+                  { END_UNLESS_LOOP:  \1        }
+                  /$self->get_loop( $1 )? $3: $2/goxes;
 
         s/ (?<!!) { VAR: ($Var_rx) }
-                  /$self->get_var( $1 )/gex;
+                  /$self->get_var( $1 )/goxe;
         s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-                  /$self->get( $1, $2, $3 )/gex;
+                  /$self->get( $1, $2, $3 )/goxe;
         s/ (?<!!) { LOOP:     ($Var_rx) } (.*?)
                   { END_LOOP: \1        }
-                  /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/gexs;
+                  /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/goxes;
         s/ (?<!!) { FILE: ($Var_rx) }
-                  /$self->_readfile( $1 )/gex;
+                  /$self->_readfile( $1 )/goxe;
 
         # Undo postponements.
-        s/ !( {               VAR:   $Var_rx                           } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) VAR:  ($Var_rx) } .*? { END_ \2 VAR: \3  } ) /$1/gxs;
+        s/ !( {               VAR:   $Var_rx                           } ) /$1/gox;
+        s/ !( { (IF_|UNLESS_) VAR:  ($Var_rx) } .*? { END_ \2 VAR: \3  } ) /$1/goxs;
 
-        s/ !( {               INI:   $Var_rx : $Var_rx (?: : $Var_rx )?                          } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) INI:  ($Var_rx : $Var_rx (?: : $Var_rx )?) } .*? { END_ \2 INI: \3 } ) /$1/gxs;
+        s/ !( {               INI:   $Var_rx : $Var_rx (?: : $Var_rx )?                          } ) /$1/gox;
+        s/ !( { (IF_|UNLESS_) INI:  ($Var_rx : $Var_rx (?: : $Var_rx )?) } .*? { END_ \2 INI: \3 } ) /$1/goxs;
 
-        s/ !( {               LOOP: ($Var_rx) } .*? { END_    LOOP: \2 } ) /$1/gxs;
-        s/ !( { (IF_|UNLESS_) LOOP: ($Var_rx) } .*? { END_ \2 LOOP: \3 } ) /$1/gxs;
+        s/ !( {               LOOP: ($Var_rx) } .*? { END_    LOOP: \2 } ) /$1/goxs;
+        s/ !( { (IF_|UNLESS_) LOOP: ($Var_rx) } .*? { END_ \2 LOOP: \3 } ) /$1/goxs;
 
-        s/ !( {               LVAR:  $Var_rx                           } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) LVAR: ($Var_rx) } .*? { END_ \2 LVAR: \3 } ) /$1/gxs;
+        s/ !( {               LVAR:  $Var_rx                           } ) /$1/gox;
+        s/ !( { (IF_|UNLESS_) LVAR: ($Var_rx) } .*? { END_ \2 LVAR: \3 } ) /$1/goxs;
 
-        s/ !( {               LC:    $Var_rx : $Var_rx                         } ) /$1/gx;
-        s/ !( { (IF_|UNLESS_) LC:   ($Var_rx : $Var_rx) } .*? { END_ \2 LC: \3 } ) /$1/gx;
+        s/ !( {               LC:    $Var_rx : $Var_rx                         } ) /$1/gox;
+        s/ !( { (IF_|UNLESS_) LC:   ($Var_rx : $Var_rx) } .*? { END_ \2 LC: \3 } ) /$1/goxs;
 
-        s/ !( { FILE:  $Var_rx } ) /$1/gx;
+        s/ !( { FILE:  $Var_rx } ) /$1/gox;
     }
     return $value;
 }
