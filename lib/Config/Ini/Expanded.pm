@@ -734,7 +734,8 @@ sub expand {
 
         last unless $changes;
 
-        if( ++$loops > $loop_limit or length $value > $size_limit ) {
+        if( ++$loops      > $loop_limit or
+            length $value > $size_limit ) {
             my $suspect = '';
                $suspect = " ($1)" if $value =~
                 /(?<!!) (
@@ -750,11 +751,9 @@ sub expand {
                         { FILE:  $Var_rx }
                         )/oxs;
 
-            my $msg = "expand(): Loop alert at [$section]=>$name$suspect:\n" .
-                ( ( length($value) > 44 )                            ?
-                substr( $value, 0, 44 ).'...('.length($value).')('.$loops.')...' :
-                $value );
-            croak $msg;
+            my $l = length $value;
+            croak "expand(): Loop alert, '[$section]=>$name'$suspect ($loops) ($l): " .
+                ( ( length($value) > 44 )? substr( $value, 0, 44 ).'...': $value );
         }
 
     }  # while
@@ -805,7 +804,12 @@ sub expand {
 #       inherit values contextually.
 
 sub _expand_loop {
-    my ( $self, $value, $name, $loop_aref, $loop_hrefs, $counters ) = @_;
+    my ( $self, $value, $name, $loop_aref, $loop_hrefs, $counters, $deep ) = @_;
+
+    # catching deep recursion
+    if( ++$deep > $loop_limit ) {
+        croak "_expand_loop(): Deep recursion alert, '$name' ($deep): $value";
+    }
 
     return unless defined $loop_aref;
 
@@ -896,7 +900,8 @@ sub _expand_loop {
                  $1,                              # $name
                  $find_loop->( $1, $loop_href ),  # $loop_aref
                  [ $loop_href, @$loop_hrefs ],    # $loop_hrefs
-                 [ $counter,   @$counters   ]     # $counters
+                 [ $counter,   @$counters   ],    # $counters
+                 $deep                            # for loop alert
                  )/goxes;
  
             # then the loop variables
@@ -933,7 +938,8 @@ sub _expand_loop {
 
             last unless $changes;
 
-            if( ++$loops > $loop_limit or length $value > $size_limit ) {
+            if( ++$loops      > $loop_limit or
+                length $value > $size_limit    ) {
                 my $suspect = '';
                    $suspect = " ($1)" if $value =~
                     /(?<!!) (
@@ -946,11 +952,9 @@ sub _expand_loop {
                             {               LOOP: ($Var_rx) } .*? { END_LOOP: \6     } |
                             )/oxs;
 
-                my $msg = "_expand_loop(): Loop alert$suspect:\n" .
-                    ( ( length($value) > 44 )                            ?
-                    substr( $value, 0, 44 ).'...('.length($value).')...' :
-                    $value );
-                croak $msg;
+                my $l = length $value;
+                croak "_expand_loop(): Loop alert, '$name'$suspect ($loops) ($l): " .
+                    ( ( length($value) > 44 )? substr( $value, 0, 44 ).'...': $value );
             }
         }
         push @ret, $tval;

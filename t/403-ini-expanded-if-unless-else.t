@@ -75,6 +75,8 @@ forest = <<:json
 ]
 <<
 
+[tests]
+
 #---------------------------------------------------------------------
 # typical report loop
 
@@ -1319,7 +1321,7 @@ _end_ini_
     $ini = Config::Ini::Expanded->new( string => $ini_data );
 
     # calculate how many tests for Test::More
-    my @tests = $ini->get( loops => 'tmpl' );
+    my @tests = $ini->get( tests => 'tmpl' );
     $num_tests = @tests;
 
 }
@@ -1343,9 +1345,9 @@ $ini->set_loop(
 
 for ( 1 .. $num_tests ) {
     my $occ     = $_ - 1;
-    my $output  = $ini->get_expanded( loops => 'tmpl', $occ );
-    my $wanted  = $ini->get(          loops => 'out',  $occ );
-    my $comment = $ini->get(          loops => 'cmt',  $occ );
+    my $output  = $ini->get_expanded( tests => 'tmpl', $occ );
+    my $wanted  = $ini->get(          tests => 'out',  $occ );
+    my $comment = $ini->get(          tests => 'cmt',  $occ );
 
     is( $output, $wanted, $comment );
 }

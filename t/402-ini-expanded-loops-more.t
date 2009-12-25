@@ -57,6 +57,8 @@ forest = <<:json
 ]
 <<
 
+[tests]
+
 #---------------------------------------------------------------------
 # typical report loop
 
@@ -113,14 +115,7 @@ tmpl = Trees: {LOOP:forest}{UNLESS_LC:last}{LVAR:tree}, {ELSE}and {LVAR:tree}{EN
  out = Trees: trident maple, southern live oak, longleaf pine, maidenhair tree, american beech, and american chestnut.
  cmt = UNLESS_LC:last with ELSE
 
-# The following works without explicit ELSE by luck (IF_LC is processed before UNLESS_LC).
-# If this weren't the case, the first ELSE would have been linked with the UNLESS.
-# The logic is nevertheless correct, but it relies on how the code is processed, so
-#     may be the source of bugs later if we don't keep this test in place
-# In fact, this may prompt me to change how the code is processed, so everything is
-#     consistent--have to think about it.  XXX
-
-cmt  = UNLESS_LC:last with ELSE, IF_LC:break(3) with ELSE (XXX)
+cmt  = UNLESS_LC:last with ELSE, IF_LC:break(3) with ELSE
 tmpl = <<:chomp
 Trees: {LOOP:forest}{UNLESS_LC:last}{LVAR:tree},{IF_LC:break(3)}
 {ELSE} {END_IF_LC:break(3)}{ELSE}and {LVAR:tree}{END_UNLESS_LC:last}{END_LOOP:forest}.
@@ -157,10 +152,20 @@ out  = <<:chomp
  trident maple southern live oak longleaf pine maidenhair tree american beech american chestnut
 <<
 
-# this example requires the ELSE to be explict, or it will be linked with the IF
-# (definitely a good source of confusion ... XXX)
+cmt  = IF_LVAR, UNLESS_LVAR with ELSE (unqualified)
+tmpl = <<:join:chomp
+{LOOP:forest}
+{IF_LVAR:tree}
+{UNLESS_LVAR:species} No species?{ELSE} {LVAR:species}
+{END_UNLESS_LVAR:species}
+{END_IF_LVAR:tree}
+{END_LOOP:forest}
+<<
+out = <<:chomp
+ acer buergerianum quercus virginiana pinus palustris ginkgo biloba fagus grandifolia castanea dentata
+<<
 
-cmt  = IF_LVAR, UNLESS_LVAR with ELSE (required explicit) (XXX)
+cmt  = IF_LVAR, UNLESS_LVAR with ELSE (explicit)
 tmpl = <<:join:chomp
 {LOOP:forest}
 {IF_LVAR:tree}
@@ -305,7 +310,7 @@ _end_ini_
     $ini = Config::Ini::Expanded->new( string => $ini_data );
 
     # calculate how many tests for Test::More
-    my @tests = $ini->get( loops => 'tmpl' );
+    my @tests = $ini->get( tests => 'tmpl' );
     $num_tests = @tests;
 }
 
@@ -322,9 +327,9 @@ $ini->set_loop( forest => $ini->get( loops => 'forest' )  );
 
 for ( 1 .. $num_tests ) {
     my $occ     = $_ - 1;
-    my $output  = $ini->get_expanded( loops => 'tmpl', $occ );
-    my $wanted  = $ini->get(          loops => 'out',  $occ );
-    my $comment = $ini->get(          loops => 'cmt',  $occ );
+    my $output  = $ini->get_expanded( tests => 'tmpl', $occ );
+    my $wanted  = $ini->get(          tests => 'out',  $occ );
+    my $comment = $ini->get(          tests => 'cmt',  $occ );
 
     is( $output, $wanted, $comment );
 }
