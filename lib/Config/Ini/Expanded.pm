@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.04
+VERSION: 1.05
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -725,9 +725,10 @@ sub expand {
             s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
                       /$self->get( $1, $2, $3 )/goxe;
         $changes += $value =~
-            s/ (?<!!) { LOOP: ($Var_rx) } (.*?)  # $2
-                      { END_LOOP: \1    }
+            s/ (?<!!) { LOOP:     ($Var_rx) } (.*?)
+                      { END_LOOP: \1        }
                       /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/goxes;
+
         $changes += $value =~
             s/ (?<!!) { FILE: ($Var_rx) }
                       /$self->_readfile( $1 )/goxe;
@@ -788,23 +789,19 @@ sub expand {
 }
 
 #---------------------------------------------------------------------
-## $ini->_expand_loop( $value, $name, $loop_aref, $loop_hrefs, $counters );
+## $ini->_expand_loop( $value, $name, $loop_aref, $contexts, $deep );
 
 # Note: because of the current code logic, if you want to postpone
 #       a loop that is in another loop, you must *also* postpone *all*
 #       of the inner loop's lvar's and lc's, e.g.,
 #       {LOOP:out} !{LOOP:in} !{LVAR:in} {END_LOOP:in} {END_LOOP:out}
 
-# Note: $loop_hrefs is an array of parent hashes.  These allow a
-#       LOOP or LVAR to refer to an ancestor loop, i.e., to
-#       inherit values contextually.
-
-# Note: $counters is an array of counter hashes for the parents.
-#       These allow an LC to refer to an ancestor loop, i.e., to
-#       inherit values contextually.
+# Note: $contexts is an array of context hashes for the parents.
+#       These allow a LOOP, LVAR, or LC to refer to an ancestor loop,
+#       i.e., to inherit values contextually and explicitly.
 
 sub _expand_loop {
-    my ( $self, $value, $name, $loop_aref, $loop_hrefs, $counters, $deep ) = @_;
+    my ( $self, $value, $name, $loop_aref, $contexts, $deep ) = @_;
 
     # catching deep recursion
     if( ++$deep > $loop_limit ) {
@@ -818,47 +815,83 @@ sub _expand_loop {
         "an array ref: $name => '$loop_aref'"
         unless ref $loop_aref eq 'ARRAY';
 
-    unless( $loop_hrefs ) {
-        $loop_hrefs = [];  # i.e., an array of hrefs
-        $counters   = [];
+    unless( $contexts ) {
+        $contexts = [];
     }
-    my $counter;
-    $counter->{ $name }{'last'} = $#{$loop_aref};
+
+    my $context;
+    $context->{ $name }{'last'} = $#{$loop_aref};
 
     # look for the loop in the current href, its parents,
     #     or the $ini object
     my $find_loop = sub {
-        my( $name, $href ) = @_;
-        for ( $href, @$loop_hrefs ) {
-            for ( $_->{ $name } ) {
-                return $_ if defined and ref eq 'ARRAY' }
+        my( $in_loop, $lvar_name ) = @_;
+
+        # if we're asking for an loop in a specific loop ...
+        if( defined $in_loop and $in_loop ne '.' ) {
+            for ( $context, @$contexts ) {
+                if( exists $_->{ $in_loop } ) {
+                    for ( $_->{ $in_loop} {'href'}{ $lvar_name } ) {
+                        return $_ if defined and ref eq 'ARRAY';
+                    }
+                }
+            }
         }
-        $self->get_loop( $name );
+
+        # otherwise, look for that lvar in any of these loops ...
+        else {
+            for ( $context, @$contexts ) {
+                my( undef, $hash ) = %$_;
+                for ( $hash->{'href'}{ $lvar_name } ) {
+                    return $_ if defined and ref eq 'ARRAY';
+                }
+            }
+        }
+        $self->get_loop( $lvar_name );
     };
 
     # look for the lvar in the current href or its parents
     my $find_lvar = sub {
-        my( $name, $href ) = @_;
-        for ( $href, @$loop_hrefs ) {
-            for ( $_->{ $name } ) { return $_ if defined }
+        my( $in_loop, $lvar_name ) = @_;
+
+        # if we're asking for an lvar in a specific loop ...
+        if( defined $in_loop and $in_loop ne '.' ) {
+            for ( $context, @$contexts ) {
+                if( exists $_->{ $in_loop } ) {
+                    for ( $_->{ $in_loop} {'href'}{ $lvar_name } ) {
+                        return $_ if defined;
+                    }
+                }
+            }
         }
+
+        # otherwise, look for that lvar in any of these loops ...
+        else {
+            for ( $context, @$contexts ) {
+                my( undef, $hash ) = %$_;
+                for ( $hash->{'href'}{ $lvar_name } ) {
+                    return $_ if defined;
+                }
+            }
+        }
+
         return;
     };
 
     my $loop_context = sub {
-        my( $this, $lc ) = @_;
-        my $c;
-        if( defined $this and $this ne '.' ) {
-            Look: for ( $counter, @$counters ) {
-                for ( $_->{ $this } ) {
-                    if( defined ) { $c = $_; last Look } } }
+        my( $in_loop, $lc ) = @_;
+        my $found;
+        if( defined $in_loop and $in_loop ne '.' ) {
+            Look: for ( $context, @$contexts ) {
+                for ( $_->{ $in_loop } ) {
+                    if( defined ) { $found = $_; last Look } } }
         }
         else {
-            $c = $counter->{ $name };
+            $found = $context->{ $name };  # current context
         }
-        return unless $c;
-        my $i    = $c->{'index'};
-        my $last = $c->{'last'};
+        return unless $found;
+        my $i    = $found->{'index'};
+        my $last = $found->{'last'};
         return  1   if $lc eq 'first' and $i == $[;
         return  1   if $lc eq 'last'  and $i == $last;
         return  1   if $lc eq 'inner' and $i > $[ and $i < $last;
@@ -877,13 +910,15 @@ sub _expand_loop {
     my @ret;
     for my $i ( $[ .. $#{$loop_aref} ) {
 
-        $counter->{ $name }{'index'} = $i;
         my $loop_href = $loop_aref->[ $i ];
 
         croak join ' ' =>
             "Error: for {LOOP:$name}, '$loop_href' is not",
             "a hash ref: $name => [ '$loop_href' ]"
             unless ref $loop_href eq 'HASH';
+
+        $context->{ $name }{'href'}  = $loop_href;
+        $context->{ $name }{'index'} = $i;
 
         my $tval = $value; 
 
@@ -894,31 +929,30 @@ sub _expand_loop {
 
             # first, expand nested loops
             $changes += $tval =~ 
-            s/{ LOOP: ($Var_rx) } (.*?) { END_LOOP: \1 }
+            s/ (?<!!) { LOOP: (?: ($Var_rx) : )? ($Var_rx) } (.*?) { END_LOOP: (?: \1 : )? \2 }
              /$self->_expand_loop(  # recurse
-                 $2,                              # $value
-                 $1,                              # $name
-                 $find_loop->( $1, $loop_href ),  # $loop_aref
-                 [ $loop_href, @$loop_hrefs ],    # $loop_hrefs
-                 [ $counter,   @$counters   ],    # $counters
-                 $deep                            # for loop alert
+                 $3,                        # $value
+                 $2,                        # $name
+                 $find_loop->( $1, $2 ),    # $loop_aref
+                 [ $context, @$contexts ],  # $contexts
+                 $deep                      # for loop alert
                  )/goxes;
- 
+
             # then the loop variables
             $changes += $tval =~ 
-            s/ (?<!!) { LVAR: ($Var_rx) }
-                      /$find_lvar->( $1, $loop_href )/goxe;
+            s/ (?<!!) { LVAR: (?: ($Var_rx) : )? ($Var_rx) }
+                      /$find_lvar->( $1, $2 )/goxe;
 
             $changes += $tval =~ 
-            s/ (?<!!) { IF_LVAR:      ($Var_rx) } (.*?)     # $2
-                  (?: { ELSE_IF_LVAR: \1        } (.*?) )?  # $3
-                      { END_IF_LVAR:  \1        }
-                      /$find_lvar->( $1, $loop_href )? $2: $3/goxes;
+            s/ (?<!!) { IF_LVAR:      (?: ($Var_rx) : )? ($Var_rx) } (.*?)     # $3
+                  (?: { ELSE_IF_LVAR: (?: \1        : )? \2        } (.*?) )?  # $4
+                      { END_IF_LVAR:  (?: \1        : )? \2        }
+                      /$find_lvar->( $1, $2 )? $3: $4/goxes;
             $changes += $tval =~ 
-            s/ (?<!!) { UNLESS_LVAR:      ($Var_rx) } (.*?)     # $2
-                  (?: { ELSE_UNLESS_LVAR: \1        } (.*?) )?  # $3
-                      { END_UNLESS_LVAR:  \1        }
-                      /$find_lvar->( $1, $loop_href )? $3: $2/goxes;
+            s/ (?<!!) { UNLESS_LVAR:      (?: ($Var_rx) : )? ($Var_rx) } (.*?)     # $3
+                  (?: { ELSE_UNLESS_LVAR: (?: \1        : )? \2        } (.*?) )?  # $4
+                      { END_UNLESS_LVAR:  (?: \1        : )? \2        }
+                      /$find_lvar->( $1, $2 )? $4: $3/goxes;
 
             # and the loop context values
             $changes += $tval =~ 

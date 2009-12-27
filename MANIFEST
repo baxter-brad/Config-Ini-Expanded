@@ -42,6 +42,8 @@ t/302-ini-expanded-oddities.t
 t/401-ini-expanded-loops-if-unless.t
 t/402-ini-expanded-loops-more.t
 t/403-ini-expanded-if-unless-else.t
+t/404-ini-expanded-loop_alerts.t
+t/405-ini-expanded-loop-inheritance.t
 lib/Config/Ini/Expanded.pm
 lib/Config/Ini/Expanded/POD.pm
 META.yml                                 Module meta-data (added by MakeMaker)
