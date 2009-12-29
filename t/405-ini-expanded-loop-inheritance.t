@@ -334,11 +334,6 @@ Granddad:grandparent, Dad:parent, Me:self
 <<
 
 #---------------------------------------------------------------------
-
-tmpl = last test
- out = last test
- cmt = last test
-
 _end_ini_
 
     $ini = Config::Ini::Expanded->new( string => $ini_data );
@@ -352,7 +347,7 @@ _end_ini_
 # Yup, we need another BEGIN block ...
 BEGIN {
 
-    use Test::More tests => $num_tests;
+    use Test::More tests => ( $num_tests * 2 );
 }
 
 #---------------------------------------------------------------------
@@ -373,6 +368,15 @@ for ( 1 .. $num_tests ) {
     my $output  = $ini->get_expanded( tests => 'tmpl', $occ );
     my $wanted  = $ini->get(          tests => 'out',  $occ );
     my $comment = $ini->get(          tests => 'cmt',  $occ );
+
+    is( $output, $wanted, $comment );
+}
+
+for ( 1 .. $num_tests ) {
+    my $occ     = $_ - 1;
+    my $output  = $ini->get_interpolated( tests => 'tmpl', $occ );
+    my $wanted  = $ini->get(              tests => 'out',  $occ );
+    my $comment = $ini->get(              tests => 'cmt',  $occ );
 
     is( $output, $wanted, $comment );
 }
