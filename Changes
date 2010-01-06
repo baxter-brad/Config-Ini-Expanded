@@ -1,8 +1,11 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
-1.05 Sun Dec 27 00:22:32 EST 2009
+1.05 Tue Jan  5 21:44:12 EST 2010
     - allow for qualified LOOP and LVAR tags
     - add t/405-ini-expanded-loop-inheritance.t
+    - add t/406-ini-expanded-more-inheritance.t
+    - fix interpolate()
+    - add interpolate() tests
 
 1.04 Mon Dec 21 11:40:10 EST 2009
     - move POD to Config::Ini::Expanded::POD

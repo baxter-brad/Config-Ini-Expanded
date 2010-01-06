@@ -904,33 +904,37 @@ sub _expand_loop {
     my $context;
     $context->{ $name }{'last'} = $#{$loop_aref};
 
+    # local array for find subs
+    my @contexts = ( $context, @$contexts );
+
     # look for the loop in the current href, its parents,
     #     or the $ini object
     my $find_loop = sub {
         my( $in_loop, $lvar_name ) = @_;
 
         # if we're asking for a loop lvar in a specific loop ...
-        if( defined $in_loop and $in_loop ne '.' ) {
-            for ( $context, @$contexts ) {
+        if( defined $in_loop ) {
+            for ( @contexts ) {
                 if( exists $_->{ $in_loop } ) {
-                    for ( $_->{ $in_loop} {'href'}{ $lvar_name } ) {
+                    for ( $_->{ $in_loop }{'href'}{ $lvar_name } ) {
                         return $_ if defined and ref eq 'ARRAY';
                     }
                 }
             }
+            return;
         }
 
         # otherwise, look for that lvar in any of the current loops ...
         else {
-            for ( $context, @$contexts ) {
+            for ( @contexts ) {
                 my( undef, $hash ) = %$_;
                 for ( $hash->{'href'}{ $lvar_name } ) {
                     return $_ if defined and ref eq 'ARRAY';
                 }
             }
+            return $self->get_loop( $lvar_name );
         }
 
-        $self->get_loop( $lvar_name );
     };
 
     # look for the lvar in the current href or its parents
@@ -938,10 +942,10 @@ sub _expand_loop {
         my( $in_loop, $lvar_name ) = @_;
 
         # if we're asking for an lvar in a specific loop ...
-        if( defined $in_loop and $in_loop ne '.' ) {
-            for ( $context, @$contexts ) {
+        if( defined $in_loop ) {
+            for ( @contexts ) {
                 if( exists $_->{ $in_loop } ) {
-                    for ( $_->{ $in_loop} {'href'}{ $lvar_name } ) {
+                    for ( $_->{ $in_loop }{'href'}{ $lvar_name } ) {
                         return $_ if defined;
                     }
                 }
@@ -950,7 +954,7 @@ sub _expand_loop {
 
         # otherwise, look for that lvar in any of the current loops ...
         else {
-            for ( $context, @$contexts ) {
+            for ( @contexts ) {
                 my( undef, $hash ) = %$_;
                 for ( $hash->{'href'}{ $lvar_name } ) {
                     return $_ if defined;
@@ -963,15 +967,24 @@ sub _expand_loop {
 
     my $loop_context = sub {
         my( $in_loop, $lc ) = @_;
+
         my $found;
-        if( defined $in_loop and $in_loop ne '.' ) {
-            Look: for ( $context, @$contexts ) {
+
+        if( defined $in_loop ) {
+            Look: for ( @contexts ) {
                 for ( $_->{ $in_loop } ) {
-                    if( defined ) { $found = $_; last Look } } }
+                    if( defined ) { $found = $_; last Look }
+                }
+            }
         }
+
+        # note: at this point, we don't have to look backward,
+        # because the current context will always have the lc's
+
         else {
             $found = $context->{ $name };  # current context
         }
+
         return unless $found;
         my $i    = $found->{'index'};
         my $last = $found->{'last'};
