@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.05
+VERSION: 1.06
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.05';
+our $VERSION = '1.06';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -75,6 +75,7 @@ our $include_root  = '';      # for INCLUDE/FILE expansions
 our $inherits      = '';      # for inheriting from other configs
 our $no_inherit    = '';      # '' means will inherit anything
 our $no_override   = '';      # '' means can override anything
+our $filter;                  # for template placeholders
 our $loop_limit    = 10;      # limits for detecting loops
 our $size_limit    = 1_000_000;
 
@@ -170,7 +171,7 @@ sub init {
         interpolates expands
         inherits no_inherit no_override
         include_root keep_comments heredoc_style
-        loop_limit size_limit encoding
+        loop_limit size_limit encoding filter
         ) ) {
         no strict 'refs';  # so "$$_" will get above values
         $self->_attr( $_ =>
@@ -184,6 +185,7 @@ sub init {
     my $interpolates  = $self->interpolates();
     my $expands       = $self->expands();
     my $encoding      = $self->encoding();
+    my $filter        = $self->filter();
     my $include_root  = $self->include_root();
     $self->include_root( $include_root )
         if $include_root =~ s'/+$'';  # strip trailing slash(es)
@@ -665,6 +667,8 @@ sub get_expanded {
 
 sub expand {
     my ( $self, $value, $section, $name ) = @_;
+
+    for( $self->filter() ) { $_->( \$value ) if defined; }
 
     my $loops;
     while( 1 ) {  no warnings 'uninitialized';
@@ -1173,6 +1177,8 @@ sub get_interpolated {
 sub interpolate {
     my( $self, $value ) = @_;
 
+    for( $self->filter() ) { $_->( \$value ) if defined; }
+
     for ( $value ) {  no warnings 'uninitialized';
 
         if( /{ELSE}/ ) {
@@ -1282,6 +1288,7 @@ sub _readfile {
 ## loop_limit( 10 )
 ## size_limit( 1_000_000 )
 ## encoding( 'utf8' )
+## filter( \&filter_sub )
 our $AUTOLOAD;
 sub AUTOLOAD {
     my $attribute = $AUTOLOAD;
@@ -1292,7 +1299,7 @@ sub AUTOLOAD {
         file | interpolates | expands |
         inherits | no_inherit | no_override |
         include_root | keep_comments | heredoc_style |
-        loop_limit | size_limit | encoding
+        loop_limit | size_limit | encoding | filter
         )$/x;
 
     my $self = shift;

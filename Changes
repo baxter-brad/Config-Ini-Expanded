@@ -1,5 +1,11 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.06 Tue Jan  5 21:54:06 EST 2010
+    - add filter()
+    - add t/407-ini-expanded-filter.t
+    - add t/408-ini-expanded-filter-pod.t
+    - update POD
+
 1.05 Tue Jan  5 21:44:12 EST 2010
     - allow for qualified LOOP and LVAR tags
     - add t/405-ini-expanded-loop-inheritance.t

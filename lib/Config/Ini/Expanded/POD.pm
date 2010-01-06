@@ -42,7 +42,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.04
+VERSION: 1.06
 
 =head1 DESCRIPTION
 
@@ -609,6 +609,44 @@ parameter value is assumed to be C<'iso-8859-1'> (rather than the
 default C<'utf8'>).  This encoding is then assumed for the
 C<'{FILE:stuff}'> operation and for C<'{INCLUDE:ini/more.ini}'>.
 
+=item $Config::Ini::Expanded::filter
+
+This value is a subroutine reference.  This subroutine will
+filter the data prior to expanding or interpolating it.  This
+is intended to allow you to use different syntax for template
+placeholders.  The subroutine expects to get a scalar reference
+and will update that scalar.  For example, if you don't like
+how this looks:
+
+ {VAR:title}
+ 
+ {LOOP:text}{LVAR:line}
+ {END_LOOP:text}
+
+then you might define a filter like this:
+
+ $ini->filter( sub {
+     for( ${$_[0]} ) {
+         s| <TMPL_VAR   \s+ NAME="(.*?)"> |{VAR:$1}|gx;
+         s| <TMPL_LOOP  \s+ NAME="(.*?)"> |{LOOP:$1}|gx;
+         s| <TMPL_LVAR  \s+ NAME="(.*?)"> |{LVAR:$1}|gx;
+         s| </TMPL_LOOP \s+ NAME="(.*?)"> |{END_LOOP:$1}|gx;
+     }
+ } );
+
+then you could change your template to look like this:
+
+ <TMPL_VAR NAME="title">
+ 
+ <TMPL_LOOP NAME="text"><TMPL_LVAR NAME="line">
+ </TMPL_LOOP NAME="text">
+
+If you're familiar with HTML::Template, you'll notice that
+the new syntax looks similar to that module's.  But there
+isn't a one-to-one correspondence, e.g., VAR and LVAR are
+two different things, and the </TMPL_LOOP...> end tag must
+still include the loop name from the begin tag.
+
 =back
 
 =head1 EXPANSION TEMPLATES
@@ -623,53 +661,53 @@ templates.  They take the following forms:
  {FILE:file_path}
 
  {INI:section:name}
- {IF_INI:section:name}.......{ELSE}*..{END_IF_INI:section:name}
- {UNLESS_INI:section:name}...{ELSE}...{END_UNLESS_INI:section:name}
+ {IF_INI:section:name}.......{ELSE[_IF_INI:section:name]}...{END_IF_INI:section:name}
+ {UNLESS_INI:section:name}...{ELSE[_UNLESS_INI:section:name]}...{END_UNLESS_INI:section:name}
  
  {INI:section:name:i}
- {IF_INI:section:name:i}.......{ELSE}...{END_IF_INI:section:name:i}
- {UNLESS_INI:section:name:i}...{ELSE}...{END_UNLESS_INI:section:name:i}
+ {IF_INI:section:name:i}.......{ELSE[_IF_INI:section:name:i]}...{END_IF_INI:section:name:i}
+ {UNLESS_INI:section:name:i}...{ELSE[_UNLESS_INI:section:name:i]}...{END_UNLESS_INI:section:name:i}
  
  {VAR:varname}
- {IF_VAR:varname}.......{ELSE}...{END_IF_VAR:varname}
- {UNLESS_VAR:varname}...{ELSE}...{END_UNLESS_VAR:varname}
+ {IF_VAR:varname}.......{ELSE[_IF_VAR:varname]}...{END_IF_VAR:varname}
+ {UNLESS_VAR:varname}...{ELSE[_UNLESS_VAR:varname]}...{END_UNLESS_VAR:varname}
  
  {LOOP:loopname}
  
      {LVAR:lvarname}
-     {IF_LVAR:lvarname}.......{ELSE}...{END_IF_LVAR:lvarname}
-     {UNLESS_LVAR:lvarname}...{ELSE}...{END_UNLESS_LVAR:lvarname}
+     {IF_LVAR:lvarname}.......{ELSE[_IF_LVAR:lvarname]}...{END_IF_LVAR:lvarname}
+     {UNLESS_LVAR:lvarname}...{ELSE[_UNLESS_LVAR:lvarname]}...{END_UNLESS_LVAR:lvarname}
  
-     {LOOP:nestedloop}
-         {LVAR:nestedlvar}
-     {END_LOOP:nestedloop}
+     {LOOP:[loopname:]nestedloop}
+         {LVAR:[nestedloop:]nestedlvar}
+     {END_LOOP:[loopname:]nestedloop}
  
      {LC:[loopname:]index}   (0 ... last index)
      {LC:[loopname:]counter} (1 ... last index + 1)
  
      {LC:[loopname:]first}
-     {IF_LC:[loopname:]first}.......{ELSE}...{END_IF_LC:[loopname:]first}
-     {UNLESS_LC:[loopname:]first}...{ELSE}...{END_UNLESS_LC:[loopname:]first}
+     {IF_LC:[loopname:]first}.......{ELSE[_IF_LC:[loopname:]first]}...{END_IF_LC:[loopname:]first}
+     {UNLESS_LC:[loopname:]first}...{ELSE[_UNLESS_LC:[loopname:]first]}...{END_UNLESS_LC:[loopname:]first}
  
      {LC:[loopname:]last}
-     {IF_LC:[loopname:]last}.......{ELSE}...{END_IF_LC:[loopname:]last}
-     {UNLESS_LC:[loopname:]last}...{ELSE}...{END_UNLESS_LC:[loopname:]last}
+     {IF_LC:[loopname:]last}.......{ELSE[_IF_LC:...]}...{END_IF_LC:[loopname:]last}
+     {UNLESS_LC:[loopname:]last}...{ELSE[_UNLESS_LC:...]}...{END_UNLESS_LC:[loopname:]last}
  
      {LC:[loopname:]inner}
-     {IF_LC:[loopname:]inner}.......{ELSE}...{END_IF_LC:[loopname:]inner}
-     {UNLESS_LC:[loopname:]inner}...{ELSE}...{END_UNLESS_LC:[loopname:]inner}
+     {IF_LC:[loopname:]inner}.......{ELSE[_IF_LC:...]}...{END_IF_LC:[loopname:]inner}
+     {UNLESS_LC:[loopname:]inner}...{ELSE[_UNLESS_LC:...]}...{END_UNLESS_LC:[loopname:]inner}
  
      {LC:[loopname:]odd}
-     {IF_LC:[loopname:]odd}.......{ELSE}...{END_IF_LC:[loopname:]odd}
-     {UNLESS_LC:[loopname:]odd}...{ELSE}...{END_UNLESS_LC:[loopname:]odd}
+     {IF_LC:[loopname:]odd}.......{ELSE[_IF_LC:...]}...{END_IF_LC:[loopname:]odd}
+     {UNLESS_LC:[loopname:]odd}...{ELSE[_UNLESS_LC:...]}...{END_UNLESS_LC:[loopname:]odd}
  
      {LC:[loopname:]break(nn)} (e.g., break(2) == "even")
-     {IF_LC:[loopname:]break(nn)}.......{ELSE}...{END_IF_LC:[loopname:]break(nn)}
-     {UNLESS_LC:[loopname:]break(nn)}...{ELSE}...{END_UNLESS_LC:[loopname:]break(nn)}
+     {IF_LC:[loopname:]break(nn)}.......{ELSE[_IF_LC:...]}...{END_IF_LC:[loopname:]break(nn)}
+     {UNLESS_LC:[loopname:]break(nn)}...{ELSE}[_UNLESS_LC:...]...{END_UNLESS_LC:[loopname:]break(nn)}
  
  {END_LOOP:loopname}
- {IF_LOOP:loopname}.......{ELSE}...{END_IF_LOOP:loopname}
- {UNLESS_LOOP:loopname}...{ELSE}...{END_UNLESS_LOOP:loopname}
+ {IF_LOOP:loopname}.......{ELSE[_IF_LOOP:loopname]}...{END_IF_LOOP:loopname}
+ {UNLESS_LOOP:loopname}...{ELSE[_UNLESS_LOOP:loopname]}...{END_UNLESS_LOOP:loopname}
  
 Note that the C<'{END...}'> tags contain the full contents of the
 corresponding beginning tag.  By putting this onus on the user (i.e.,
@@ -680,11 +718,11 @@ balanced tags.
 It can also be viewed as a positive explicit statement of were a tag
 begins and ends (albeit at the cost of verbosity).
 
-* A note about C<'{ELSE}'>: If there are no nested C<'{IF...}'> and/or
-C<'{UNLESS...}'> tags inside the text blocks, then C<'{ELSE}'> is all
-you need.  But if there are nested IF's and/or UNLESS's, you will (may)
-need to expand the ELSE tags to include all of the begin tag (to
-resolve ambiguities), e.g.,
+A note about C<'{ELSE}'>: it is not strictly necessary to qualify
+any C<'{ELSE}'> tag, i.e., by adding the full contents of the begin tag,
+e.g., C<'{ELSE_IF_VAR:maple}'>.  This qualification is done internally
+for any "bare" ELSE's.  But you may want to qualify your ELSE's anyway
+for clarity, e.g.,
 
  {IF_VAR:tree}
      {IF_VAR:maple}{VAR:maple}
@@ -693,9 +731,15 @@ resolve ambiguities), e.g.,
  {ELSE_IF_VAR:tree}No tree.
  {END_IF_VAR:tree}
 
-The "(may)" above indicates that you may not strictly need to expand
-one or the other (or even either) of the ELSE's in this example,
-depending on their order.  But you may want to anyway.
+
+A note about C<'{LOOP...}'>, C<'{LVAR...}'>, C<'{IF_LOOP...}'>,
+C<'{UNLESS_LOOP...}'>, C<'{IF_LVAR...}'>, C<'{UNLESS_LVAR...}'>, and
+their ELSE and END tags: The extra qualification, e.g.,
+C<'{LOOP:loopname:nestedloop}'> vs. C<'{LOOP:nestedloop}'> is only
+necessary if there is ambiguity and you need to disambiguate.  Without
+any qualification, the named element (e.g., "nestedloop") will be
+searched for first in the current loop and if not found, back through
+the previous levels of loops.
 
 Finally, a note about the loop context tags, C<'{LC...}'>,
 C<'{IF_LC...}'>, C<'{UNLESS_LC...}'>, and their ELSE and END tags:  The
@@ -704,9 +748,7 @@ current loop (vs. a parent loop).
 
 Since this is usually the case, you'll usually leave off the loopname.
 But if you want to access the loop context of a parent loop, the
-loopname must be included.  In addition, a dot character (period, full
-stop, C<'.'>) may be used to denote the current loop, e.g.,
-C<'{LC:.:counter}'> and C<'{LC:counter}'> are the same.
+loopname must be included.
 
 =head2 Templates Specifics
 
