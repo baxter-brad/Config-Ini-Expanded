@@ -42,7 +42,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.06
+VERSION: 1.07
 
 =head1 DESCRIPTION
 
@@ -646,6 +646,45 @@ the new syntax looks similar to that module's.  But there
 isn't a one-to-one correspondence, e.g., VAR and LVAR are
 two different things, and the </TMPL_LOOP...> end tag must
 still include the loop name from the begin tag.
+
+=item $Config::Ini::Expanded::callbacks
+
+This value is a hashref of subroutine references.
+These subroutines will be called if their keys
+appear in one of the following template placeholders:
+
+ {VAR:...}
+ {INI:...}
+ {LVAR:...}
+
+Theses keys must appear in the "name" portion of
+the placeholder as if they were subroutine calls
+for that name, e.g.,
+
+ {VAR:escape_url(query)}         (vs. {VAR:query})
+ {INI:section:escape_html(text)} (vs. {INI:section:text})
+ {LVAR:escape_js(parms)}         (vs. {LVAR:parms})
+
+The respective callback keys would then be
+
+ escape_url
+ escape_html
+ escape_js
+
+e.g.,
+
+ $ini->callbacks( {
+     escape_url  => sub { ... },
+     escape_html => sub { ... },
+     escape_js   => sub { ... },
+ } );
+
+The intention for callbacks is to implement the usual
+escape operations as implied by the above examples.
+But callbacks may be named anything you want, and they
+may do anything you want.  The subroutines will be passed
+the value for the indicated name and should return the
+escaped (or otherwised munged) value.
 
 =back
 

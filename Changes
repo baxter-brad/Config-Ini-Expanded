@@ -1,5 +1,9 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.07 Thu Jan  7 00:33:22 EST 2010
+    - add callbacks, e.g., {VAR:escape_html(xyz)}
+    - add t/409-ini-expanded-callbacks.t
+
 1.06 Tue Jan  5 21:54:06 EST 2010
     - add filter()
     - add t/407-ini-expanded-filter.t

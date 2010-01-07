@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.06
+VERSION: 1.07
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.06';
+our $VERSION = '1.07';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -76,6 +76,7 @@ our $inherits      = '';      # for inheriting from other configs
 our $no_inherit    = '';      # '' means will inherit anything
 our $no_override   = '';      # '' means can override anything
 our $filter;                  # for template placeholders
+our $callbacks;               # for escape_html(), etc.
 our $loop_limit    = 10;      # limits for detecting loops
 our $size_limit    = 1_000_000;
 
@@ -171,7 +172,7 @@ sub init {
         interpolates expands
         inherits no_inherit no_override
         include_root keep_comments heredoc_style
-        loop_limit size_limit encoding filter
+        loop_limit size_limit encoding filter callbacks
         ) ) {
         no strict 'refs';  # so "$$_" will get above values
         $self->_attr( $_ =>
@@ -185,7 +186,6 @@ sub init {
     my $interpolates  = $self->interpolates();
     my $expands       = $self->expands();
     my $encoding      = $self->encoding();
-    my $filter        = $self->filter();
     my $include_root  = $self->include_root();
     $self->include_root( $include_root )
         if $include_root =~ s'/+$'';  # strip trailing slash(es)
@@ -484,6 +484,25 @@ sub init {
 
 #---------------------------------------------------------------------
 ## $ini->get( $section, $name, $i )
+sub wrap_get {
+    my ( $self, $section, $name, $i ) = @_;
+
+    my $callbacks = $self->callbacks();
+    return &get unless $callbacks;  # XXX bad idea to use &?
+
+    my $cb_regx = join '|', keys %$callbacks;
+    return &get unless $name =~ /^($cb_regx)\((.*)\)/;
+
+    my $callback = $callbacks->{ $1 };
+    my $realname =               $2;
+
+    # XXX initially assume wrap_get never wantarray's
+    my $try = $self->get( $section, $realname, $i );
+    return $callback->( $try ) if defined $try;
+
+    return;
+}
+
 sub get {
     my ( $self, $section, $name, $i ) = @_;
 
@@ -533,6 +552,25 @@ sub get {
 
 #---------------------------------------------------------------------
 ## $ini->get_var( $var )
+sub wrap_get_var {
+    my ( $self, $var ) = @_;
+
+    my $callbacks = $self->callbacks();
+    return &get_var unless $callbacks;  # XXX bad idea to use &?
+
+    my $cb_regx = join '|', keys %$callbacks;
+    return &get_var unless $var =~ /^($cb_regx)\((.*)\)/;
+
+    my $callback = $callbacks->{ $1 };
+    my $realvar  =               $2;
+
+    for( $self->get_var( $realvar ) ) {
+        return $callback->( $_ ) if defined;
+    }
+
+    return;
+}
+
 sub get_var {
     my ( $self, $var ) = @_;
 
@@ -726,10 +764,12 @@ sub expand {
 
         $changes += $value =~
             s/ (?<!!) { VAR: ($Var_rx) }
-                      /$self->get_var( $1 )/goxe;
+                      /$self->wrap_get_var( $1 )/goxe;
+                      # was: /$self->get_var( $1 )/goxe;
         $changes += $value =~
             s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-                      /$self->get( $1, $2, $3 )/goxe;
+                      /$self->wrap_get( $1, $2, $3 )/goxe;
+                      # was: /$self->get( $1, $2, $3 )/goxe;
         $changes += $value =~
             s/ (?<!!) { LOOP:     ($Var_rx) } (.*?)
                       { END_LOOP: \1        }
@@ -911,6 +951,12 @@ sub _expand_loop {
     # local array for find subs
     my @contexts = ( $context, @$contexts );
 
+    my $callbacks = $self->callbacks();
+    my $cb_regx;
+    if( $callbacks ) {
+        $cb_regx = join '|', keys %$callbacks;
+    }
+
     # look for the loop in the current href, its parents,
     #     or the $ini object
     my $find_loop = sub {
@@ -945,12 +991,23 @@ sub _expand_loop {
     my $find_lvar = sub {
         my( $in_loop, $lvar_name ) = @_;
 
+        my $callback;
+        if( $callbacks ) {
+            if( $lvar_name =~ /^($cb_regx)\((.*)\)/ ) {
+                $callback  = $callbacks->{ $1 };
+                $lvar_name =               $2;
+            }
+        }
+
         # if we're asking for an lvar in a specific loop ...
         if( defined $in_loop ) {
             for ( @contexts ) {
                 if( exists $_->{ $in_loop } ) {
                     for ( $_->{ $in_loop }{'href'}{ $lvar_name } ) {
-                        return $_ if defined;
+                        if( defined ) {
+                            return $callback->( $_ ) if $callback;
+                            return              $_;
+                        }
                     }
                 }
             }
@@ -961,7 +1018,10 @@ sub _expand_loop {
             for ( @contexts ) {
                 my( undef, $hash ) = %$_;
                 for ( $hash->{'href'}{ $lvar_name } ) {
-                    return $_ if defined;
+                    if( defined ) {
+                        return $callback->( $_ ) if $callback;
+                        return              $_;
+                    }
                 }
             }
         }
@@ -1145,7 +1205,7 @@ sub _disambiguate_else {
         # [1]: disambiguate the ELSE
         my $explicit_else = "{ELSE_${if_unless}_$type:$name}";
 
-        # [2]: we're changing the just first one we find
+        # [2]: we're changing just the first one we find
         # [3]: unless there's already a qualified one
         $inner =~ s/{ELSE}/$explicit_else/
             unless $inner =~ /$explicit_else/;
@@ -1219,9 +1279,11 @@ sub interpolate {
                   /$self->_expand_if( $1, $self->get_loop( $1 )? $3: $2 )/goxes;
 
         s/ (?<!!) { VAR: ($Var_rx) }
-                  /$self->get_var( $1 )/goxe;
+                  /$self->wrap_get_var( $1 )/goxe;
+                  # was: /$self->get_var( $1 )/goxe;
         s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
-                  /$self->get( $1, $2, $3 )/goxe;
+                  /$self->wrap_get( $1, $2, $3 )/goxe;
+                  # was: /$self->get( $1, $2, $3 )/goxe;
         s/ (?<!!) { LOOP:     ($Var_rx) } (.*?)
                   { END_LOOP: \1        }
                   /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/goxes;
@@ -1289,6 +1351,7 @@ sub _readfile {
 ## size_limit( 1_000_000 )
 ## encoding( 'utf8' )
 ## filter( \&filter_sub )
+## callbacks( { abc => \&abc, xyz => \&xyz, ... } ), i.e., hash of subs
 our $AUTOLOAD;
 sub AUTOLOAD {
     my $attribute = $AUTOLOAD;
@@ -1299,7 +1362,7 @@ sub AUTOLOAD {
         file | interpolates | expands |
         inherits | no_inherit | no_override |
         include_root | keep_comments | heredoc_style |
-        loop_limit | size_limit | encoding | filter
+        loop_limit | size_limit | encoding | filter | callbacks
         )$/x;
 
     my $self = shift;
