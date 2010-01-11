@@ -67,7 +67,7 @@ tmpl = {VAR:var_lvar}
  cmt = VAR/LVAR, loop alert ... {VAR...} = "{LOOP...}{LVAR...}" and {LVAR...} = "{VAR...}"
 
 tmpl = {INI:to_test:ini_lvar}
- out = Loop alert.*INI
+ out = Loop alert.*LOOP
  cmt = INI/LVAR, loop alert ... {INI...} = "{LOOP...}{LVAR...}" and {LVAR...} = "{INI...}"
 
 tmpl = {LOOP:loop_lvar}{LVAR:lvar}{END_LOOP:loop_lvar}

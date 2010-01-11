@@ -749,6 +749,13 @@ sub expand {
                       { END_UNLESS_INI:  \1        : \2        (?: : \3        )? }
                       /$self->get( $1, $2, $3 )? $5: $4/goxes;
 
+        # this must come before IF/UNLESS_LOOP
+
+        $changes += $value =~
+            s/ (?<!!) { LOOP:     ($Var_rx) } (.*?)
+                      { END_LOOP: \1        }
+                      /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/goxes;
+
         # Note: at this point no LOOP's have parents
 
         $changes += $value =~
@@ -770,10 +777,6 @@ sub expand {
             s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
                       /$self->wrap_get( $1, $2, $3 )/goxe;
                       # was: /$self->get( $1, $2, $3 )/goxe;
-        $changes += $value =~
-            s/ (?<!!) { LOOP:     ($Var_rx) } (.*?)
-                      { END_LOOP: \1        }
-                      /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/goxes;
 
         $changes += $value =~
             s/ (?<!!) { FILE: ($Var_rx) }
@@ -976,6 +979,7 @@ sub _expand_loop {
 
         # otherwise, look for that lvar in any of the current loops ...
         else {
+
             for ( @contexts ) {
                 my( undef, $hash ) = %$_;
                 for ( $hash->{'href'}{ $lvar_name } ) {
@@ -1103,11 +1107,11 @@ sub _expand_loop {
             s/ (?<!!) { LOOP:     (?: ($Var_rx) : )? ($Var_rx) } (.*?)  # $3
                       { END_LOOP: (?: \1        : )? \2        }
                       /$self->_expand_loop(  # recurse
-                          $3,                        # $value
-                          $2,                        # $name
-                          $find_loop->( $1, $2 ),    # $loop_aref
-                          [ $context, @$contexts ],  # $contexts
-                          $deep                      # for loop alert
+                          $3,                         # $value
+                          $2,                         # $name
+                          $find_loop->( $1, $2 )||[], # $loop_aref
+                          [ $context, @$contexts ],   # $contexts
+                          $deep                       # for loop alert
                           )/goxes;
 
             # then the loop variables
@@ -1267,6 +1271,12 @@ sub interpolate {
                   { END_UNLESS_INI:  \1        : \2        (?: : \3        )? }
                   /$self->_expand_if( "$1:$2:$3", $self->get( $1, $2, $3 )? $5: $4 )/goxes;
 
+        # this must come before IF/UNLESS_LOOP
+
+        s/ (?<!!) { LOOP:     ($Var_rx) } (.*?)
+                  { END_LOOP: \1        }
+                  /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/goxes;
+
         # Note: at this point no LOOP's have parents
 
         s/ (?<!!) { IF_LOOP:          ($Var_rx) } (.*?)     # $2
@@ -1284,9 +1294,6 @@ sub interpolate {
         s/ (?<!!) { INI: ($Var_rx) : ($Var_rx) (?: : ($Var_rx) )? }
                   /$self->wrap_get( $1, $2, $3 )/goxe;
                   # was: /$self->get( $1, $2, $3 )/goxe;
-        s/ (?<!!) { LOOP:     ($Var_rx) } (.*?)
-                  { END_LOOP: \1        }
-                  /$self->_expand_loop( $2, $1, $self->get_loop( $1 ) )/goxes;
         s/ (?<!!) { FILE: ($Var_rx) }
                   /$self->_readfile( $1 )/goxe;
 
