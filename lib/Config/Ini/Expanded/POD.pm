@@ -42,7 +42,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.07
+VERSION: 1.08
 
 =head1 DESCRIPTION
 
@@ -419,18 +419,16 @@ The global settings below are stored in the object during C<init()>.
 So if the global settings are subsequently changed, any existing
 objects will not be affected.
 
-=over 8
-
-=item $Config::Ini::Expanded::keep_comments
+=head2 $Config::Ini::Expanded::keep_comments
 
 This boolean value will determine if comments are kept when an Ini file
 is loaded or when an Ini object is written out using C<as_string()>.
-The default is false--comments are not kept.  The rational is this:
+The default is false -- comments are not kept.  The rational is this:
 Unlike the Config::Ini::Edit module, the C<Expanded> module is not
 indented primarily to rewrite Ini files, so it is more likely that
 comments aren't needed in the object.
 
-=item $Config::Ini::Expanded::heredoc_style
+=head2 $Config::Ini::Expanded::heredoc_style
 
 This string can be one of C<< '<<' >>, C<< '<<<<' >>, C<'{'>, or
 C<'{}'> (default is C<< '<<' >>).  This determines the default heredoc
@@ -459,7 +457,7 @@ correspond respectively to the following styles.
  Hey
  }EOT
 
-=item $Config::Ini::Expanded::interpolates
+=head2 $Config::Ini::Expanded::interpolates
 
 This boolean value (default: C<true>) will determine if expansion
 templates in double quoted values will automatically be interpolated as
@@ -483,7 +481,7 @@ and ...
 
 See more about expansion templates below.
 
-=item $Config::Ini::Expanded::expands
+=head2 $Config::Ini::Expanded::expands
 
 This boolean value (default: C<false>) will determine if expansion
 templates in double quoted values will automatically be expanded as the
@@ -496,7 +494,7 @@ templates in the value.
 
 See more about expansion templates below.
 
-=item $Config::Ini::Expanded::inherits
+=head2 $Config::Ini::Expanded::inherits
 
 The value of this setting will be a null string (the default) to
 signify no inheritance, or an array reference pointing to an array of
@@ -510,7 +508,7 @@ That is, if your object (C<$ini>) does not have a value for the
 requested parameters, Config::Ini::Expanded will travel through the
 array of other objects (in the order given) until a value is found.
 
-=item $Config::Ini::Expanded::no_inherit
+=head2 $Config::Ini::Expanded::no_inherit
 
 The value of this setting will be a null string (the default) to
 signify that anything may be inherited, or a reference to a hash of
@@ -530,7 +528,7 @@ Note that the C<no_inherit> attribute does not affect inheritance that
 may take place when a program calls C<$ini->get_var()> or
 C<$ini->get_loop()>.
 
-=item $Config::Ini::Expanded::no_override
+=head2 $Config::Ini::Expanded::no_override
 
 The value of this setting will be a null string (the default) to
 signify that any inherited values may be overridden, or a reference to
@@ -547,7 +545,7 @@ C<section/name2> to be set during the C<init()> of that object.  That
 is, those section/name combinations may not be overridden in an ini
 file (on the assumption that they will be set in an inherited object).
 
-=item $Config::Ini::Expanded::loop_limit
+=head2 $Config::Ini::Expanded::loop_limit
 
 During an expansion, e.g., when you call C<get_expanded()>, a loop is
 started that ends when there are no more expansions to do.  If this
@@ -564,7 +562,7 @@ Looping expansions allow for nested expansion templates like:
 
 The inner-most templates are expanded first.
 
-=item $Config::Ini::Expanded::size_limit
+=head2 $Config::Ini::Expanded::size_limit
 
 During an expansion like described above, the value being expanded may
 grow longer.  If the length of the value exceeds the value of
@@ -574,7 +572,7 @@ assumption that the large size is the result of a loop).
 The default C<'size_limit'> is 1_000_000.  Increase this limit if you
 need to allow for larger values.
 
-=item $Config::Ini::Expanded::include_root
+=head2 $Config::Ini::Expanded::include_root
 
 This value is the path were C<'{INCLUDE:file_path}'> and
 C<'{FILE:file_path}'> will look when file contents are read in.
@@ -591,7 +589,7 @@ would be the contents of C<'/web/data/stuff'>, and the contents of
 C<'/web/data/ini/more.ini'> would be pulled in and used to augment the
 Ini file contents.
 
-=item $Config::Ini::Expanded::encoding
+=head2 $Config::Ini::Expanded::encoding
 
 This value is the character encoding expected for the ini data.
 It applies in new()/init() (which includes C<'{INCLUDE:file_path}'>)
@@ -609,7 +607,7 @@ parameter value is assumed to be C<'iso-8859-1'> (rather than the
 default C<'utf8'>).  This encoding is then assumed for the
 C<'{FILE:stuff}'> operation and for C<'{INCLUDE:ini/more.ini}'>.
 
-=item $Config::Ini::Expanded::filter
+=head2 $Config::Ini::Expanded::filter
 
 This value is a subroutine reference.  This subroutine will
 filter the data prior to expanding or interpolating it.  This
@@ -647,7 +645,7 @@ isn't a one-to-one correspondence, e.g., VAR and LVAR are
 two different things, and the </TMPL_LOOP...> end tag must
 still include the loop name from the begin tag.
 
-=item $Config::Ini::Expanded::callbacks
+=head2 $Config::Ini::Expanded::callbacks
 
 This value is a hashref of subroutine references.
 These subroutines will be called if their keys
@@ -685,8 +683,6 @@ But callbacks may be named anything you want, and they
 may do anything you want.  The subroutines will be passed
 the value for the indicated name and should return the
 escaped (or otherwised munged) value.
-
-=back
 
 =head1 EXPANSION TEMPLATES
 
@@ -751,7 +747,7 @@ templates.  They take the following forms:
 Note that the C<'{END...}'> tags contain the full contents of the
 corresponding beginning tag.  By putting this onus on the user (i.e.,
 supplying the full beginning tag in multiple places), it removes from
-the code the onus--and processing time--of parsing the text for
+the code the onus -- and processing time -- of parsing the text for
 balanced tags.
 
 It can also be viewed as a positive explicit statement of were a tag
@@ -791,9 +787,7 @@ loopname must be included.
 
 =head2 Templates Specifics
 
-=over 8
-
-=item {INCLUDE:ini_file_path}
+=head3 {INCLUDE:ini_file_path}
 
 The C<'{INCLUDE:ini_file_path}'> template is expanded during C<init()>
 as the Ini file is read in.  This allows you to include Ini files in
@@ -819,7 +813,7 @@ or during calls to C<get_expanded()> or C<get_interpolated()>.  It is a
 section-level template, not a value-level template.  See
 C<'{FILE:file_path}'> below for value-level file inclusions.
 
-=item {FILE:file_path}
+=head3 {FILE:file_path}
 
 The C<'{FILE:file_path}'> template is expanded inside double-quoted
 values and when you call C<get_expanded()> and C<get_interpolated()>.
@@ -834,9 +828,12 @@ C<'/'>), or if C<'file_path'> contains two dots C<'..'>.
  
  print $ini->get_expanded( website => 'homepage' );
 
-=item {INI:section:name}
+=head3 {INI:section:name}
 
-=item {INI:section:name:i}
+Includes:
+
+ {INI:section:name}
+ {INI:section:name:i}
 
 The C<'{INI:section:name}'> template is expanded inside double-quoted
 values and when you call C<get_expanded()> and C<get_interpolated()>.
@@ -851,13 +848,14 @@ You can provide an occurrence value (array subscript), e.g.,
  this is the second: {INI:section:name:1}.
  <<
 
-=item {IF_INI:section:name}...[{ELSE[_IF_INI:section:name]}...]{END_IF_INI:section:name}
+=head3 {IF/UNLESS_INI:section:name}
 
-=item {IF_INI:section:name:i}...[{ELSE[_IF_INI:section:name:i]}...]{END_IF_INI:section:name:i}
+Includes:
 
-=item {UNLESS_INI:section:name}...[{ELSE[_UNLESS_INI:section:name]}...]{END_UNLESS_INI:section:name}
-
-=item {UNLESS_INI:section:name:i}...[{ELSE[_UNLESS_INI:section:name:i]}...]{END_UNLESS_INI:section:name:i}
+ {IF_INI:section:name}...[{ELSE[_IF_INI:section:name]}...]{END_IF_INI:section:name}
+ {IF_INI:section:name:i}...[{ELSE[_IF_INI:section:name:i]}...]{END_IF_INI:section:name:i}
+ {UNLESS_INI:section:name}...[{ELSE[_UNLESS_INI:section:name]}...]{END_UNLESS_INI:section:name}
+ {UNLESS_INI:section:name:i}...[{ELSE[_UNLESS_INI:section:name:i]}...]{END_UNLESS_INI:section:name:i}
 
 These templates provide for conditional text blocks based on the truth
 (or existence) of a named value in a section.  An optional C<'{ELSE}'>
@@ -870,7 +868,7 @@ Note also that the C<'{ELSE}'> tags may also need to contain the full
 contents of the beginning tag if there are nested IF's and/or UNLESS's
 in between.
 
-=item {VAR:varname}
+=head3 {VAR:varname}
 
 The C<'{VAR:varname}'> template is expanded inside double-quoted values
 and when you call C<get_expanded()> and C<get_interpolated()>.  It
@@ -884,9 +882,12 @@ silently with a null string.
  
  $greeting = $ini->get_expanded( letter => 'greeting' );
 
-=item {IF_VAR:varname}...[{ELSE[_IF_VAR:varname]}...]{END_IF_VAR:varname}
+=head3 {IF/UNLESS_VAR:varname}
 
-=item {UNLESS_VAR:varname}...[{ELSE[_UNLESS_VAR:varname]}...]{END_UNLESS_VAR:varname}
+Includes:
+
+ {IF_VAR:varname}...[{ELSE[_IF_VAR:varname]}...]{END_IF_VAR:varname}
+ {UNLESS_VAR:varname}...[{ELSE[_UNLESS_VAR:varname]}...]{END_UNLESS_VAR:varname}
 
 These templates provide for conditional text blocks based on the truth
 (or existence) of a variable.  An optional C<'{ELSE}'> divider supplies
@@ -899,13 +900,17 @@ Note also that the C<'{ELSE}'> tags may also need to contain the full
 contents of the beginning tag if there are nested IF's and/or UNLESS's
 in between.
 
-=item {LOOP:loopname}...{LVAR:lvarname}...{END_LOOP:loopname}
+=head3 {LOOP:loopname}
+
+Includes:
+
+ {LOOP:loopname}...{LVAR:lvarname}...{END_LOOP:loopname}
 
 This template enables loops that are similar to those in
 HTML::Template, i.e., they iterate over an array of hashes.  The
 C<'{LVAR:...}'> tag is where you display the values from each hash.
 
-Use set_loop() to provide the array reference--and it may include
+Use set_loop() to provide the array reference -- and it may include
 nested loops, e.g.,
 
  $ini->set_loop( loop1 => [{
@@ -1012,9 +1017,12 @@ as complete as possible both to explain why things might not happen as
 you intended and to show what is possible (that, e.g., isn't possible
 in HTML::Template).
 
-=item {IF_LOOP:loopname}...[{ELSE[_IF_LOOP:loopname]}...]{END_IF_LOOP:loopname}
+=head3 {IF/UNLESS_LOOP:loopname}
 
-=item {UNLESS_LOOP:loopname}...[{ELSE[_UNLESS_LOOP:loopname]}...]{END_UNLESS_LOOP:loopname}
+Includes:
+
+ {IF_LOOP:loopname}...[{ELSE[_IF_LOOP:loopname]}...]{END_IF_LOOP:loopname}
+ {UNLESS_LOOP:loopname}...[{ELSE[_UNLESS_LOOP:loopname]}...]{END_UNLESS_LOOP:loopname}
 
 These templates provide for conditional text blocks based on the
 existence of a loop.  An optional C<'{ELSE}'> divider supplies an
@@ -1027,7 +1035,7 @@ Note also that the C<'{ELSE}'> tags may also need to contain the full
 contents of the beginning tag if there are nested IF's and/or UNLESS's
 in between.
 
-=item {LVAR:lvarname}
+=head3 {LVAR:lvarname}
 
 As stated above, this template is used inside a C<'{LOOP...}'> to
 display the values from each hash in the loop.  Outside a loop, this
@@ -1035,7 +1043,7 @@ template will be silently replaced with nothing.
 
 Inside multiple nested loops, this template will be replaced with the
 value defined in the current loop or with a value found in one of the
-parent loops--from the closest parent if it's defined in more than
+parent loops -- from the closest parent if it's defined in more than
 one.  Note that for name collisions, "closest parent" is relative to
 how the templates are being displayed rather than how they are defined
 in set_loop().
@@ -1049,9 +1057,12 @@ as it were.
 Note also that there is no set_lvar() method.  This is because LVAR's
 are always set inside loops via set_loop().
 
-=item {IF_LVAR:lvarname}...[{ELSE[_IF_LVAR:lvarname]}...]{END_IF_LVAR:lvarname}
+=head3 {IF_LVAR:lvarname}
 
-=item {UNLESS_LVAR:lvarname}...[{ELSE[_UNLESS_LVAR:lvarname]}...]{END_UNLESS_LVAR:lvarname}
+Includes:
+
+ {IF_LVAR:lvarname}...[{ELSE[_IF_LVAR:lvarname]}...]{END_IF_LVAR:lvarname}
+ {UNLESS_LVAR:lvarname}...[{ELSE[_UNLESS_LVAR:lvarname]}...]{END_UNLESS_LVAR:lvarname}
 
 These templates provide for conditional text blocks based on the truth
 (or existence) of a value inside a loop.  An optional C<'{ELSE}'>
@@ -1069,14 +1080,12 @@ meaning outside a loop.  That is, if used outside a loop, these will
 always register as false, so I<something> might be displayed, but it
 probably won't mean what you think.
 
-=back
-
 =head2 Loop Context Variables
 
 In HTML::Template (and other modules based on it, like
 HTML::Template::Compiled) there are values you can access that reflect
-the current loop context, i.e., __first__, __last__, __inner__,
-__odd__, __counter__, as well as __index__, and __break_ (from
+the current loop context, i.e., C<__first__>, C<__last__>, C<__inner__>,
+C<__odd__>, C<__counter__>, as well as C<__index__>, and C<__break__> (from
 H::T::C).
 
 These values are supported in this module, though without the double
@@ -1085,66 +1094,74 @@ addition, in this module, these values are available not only for the
 current loop, but also for parent loops (because the syntax includes
 the loop name).
 
-=over 8
-
-=item {LC:loopname:index}   (0 ... last index)
+=head3 {LC:loopname:index} (0 ... last index)
 
 The current index of the loop (starting with 0).  This differs from
 C<'{LC:loopname:counter}'>, which starts with 1.
 
-=item {LC:loopname:counter} (1 ... last index + 1)
+=head3 {LC:loopname:counter} (1 ... last index + 1)
 
 The current counter (line number?) of the loop (starting with 1).  This
 differs from C<'{LC:loopname:index}'>, which starts with 0.
 
-=item {LC:loopname:first}
+=head3 {LC/IF_LC/UNLESS_LC:loopname:first}
 
-=item {IF_LC:loopname:first}.......{ELSE[_IF_LC:loopname:first]}...{END_IF_LC:loopname:first}
+Includes:
 
-=item {UNLESS_LC:loopname:first}...{ELSE[_UNLESS_LC:loopname:first]}...{END_UNLESS_LC:loopname:first}
+ {LC:loopname:first}
+ {IF_LC:loopname:first}.......{ELSE[_IF_LC:loopname:first]}...{END_IF_LC:loopname:first}
+ {UNLESS_LC:loopname:first}...{ELSE[_UNLESS_LC:loopname:first]}...{END_UNLESS_LC:loopname:first}
 
 The template C<'{LC:loopname:first}'> displays "1" (true) if the
 current iteration is the first one, "" (false) if not.  The IF and
 UNLESS templates provide for conditional text blocks based on these
 boolean values.
 
-=item {LC:loopname:last}
+=head3 {LC/IF_LC/UNLESS_LC:loopname:last}
 
-=item {IF_LC:loopname:last}.......{ELSE[_IF_LC:loopname:last]}...{END_IF_LC:loopname:last}
+Includes:
 
-=item {UNLESS_LC:loopname:last}...{ELSE[_UNLESS_LC:loopname:last]}...{END_UNLESS_LC:loopname:last}
+ {LC:loopname:last}
+ {IF_LC:loopname:last}.......{ELSE[_IF_LC:loopname:last]}...{END_IF_LC:loopname:last}
+ {UNLESS_LC:loopname:last}...{ELSE[_UNLESS_LC:loopname:last]}...{END_UNLESS_LC:loopname:last}
 
 The template C<'{LC:loopname:last}'> displays "1" (true) if the current
 iteration is the last one, "" (false) if not.  The IF and UNLESS
 templates provide for conditional text blocks based on these boolean
 values.
 
-=item {LC:loopname:inner}
+=head3 {LC/IF_LC/UNLESS_LC:loopname:inner}
 
-=item {IF_LC:loopname:inner}.......{ELSE[_IF_LC:loopname:inner]}...{END_IF_LC:loopname:inner}
+Includes:
 
-=item {UNLESS_LC:loopname:inner}...{ELSE[_UNLESS_LC:loopname:inner]}...{END_UNLESS_LC:loopname:inner}
+ {LC:loopname:inner}
+ {IF_LC:loopname:inner}.......{ELSE[_IF_LC:loopname:inner]}...{END_IF_LC:loopname:inner}
+ {UNLESS_LC:loopname:inner}...{ELSE[_UNLESS_LC:loopname:inner]}...{END_UNLESS_LC:loopname:inner}
 
 The template C<'{LC:loopname:inner}'> displays "1" (true) if the
 current iteration is not the first one and is not the last one, ""
 (false) otherwise.  The IF and UNLESS templates provide for conditional
 text blocks based on these boolean values.
 
-=item {LC:loopname:odd}
+=head3 {LC/IF_LC/UNLESS_LC:loopname:odd}
 
-=item {IF_LC:loopname:odd}.......{ELSE[_IF_LC:loopname:odd]}...{END_IF_LC:loopname:odd}
+Includes:
 
-=item {UNLESS_LC:loopname:odd}...{ELSE[_UNLESS_LC:loopname:odd]}...{END_UNLESS_LC:loopname:odd}
+ {LC:loopname:odd}
+ {IF_LC:loopname:odd}.......{ELSE[_IF_LC:loopname:odd]}...{END_IF_LC:loopname:odd}
+ {UNLESS_LC:loopname:odd}...{ELSE[_UNLESS_LC:loopname:odd]}...{END_UNLESS_LC:loopname:odd}
 
 The template C<'{LC:loopname:odd}'> displays "1" (true) if the current
 iteration is odd, "" (false) if not.  The IF and UNLESS templates
 provide for conditional text blocks based on these boolean values.
 
-=item {LC:loopname:break(nn)} (e.g., break(2) == "even")
+=head3 {LC/IF_LC/UNLESS_LC:loopname:break(nn)} (e.g., break(2) == "even")
 
-=item {IF_LC:loopname:break(nn)}.......{ELSE[_IF_LC:loopname:break(nn)]}...{END_IF_LC:loopname:break(nn)}
+Includes:
 
-=item {UNLESS_LC:loopname:break(nn)}...{ELSE[_UNLESS_LC:loopname:break(nn)]}...{END_UNLESS_LC:loopname:break(nn)}
+ {LC:loopname:break(nn)} (e.g., break(2) == "even")
+ {IF_LC:loopname:break(nn)}.......{ELSE[_IF_LC:loopname:break(nn)]}...{END_IF_LC:loopname:break(nn)}
+ {UNLESS_LC:loopname:break(nn)}...{ELSE[_UNLESS_LC:loopname:break(nn)]}...{END_UNLESS_LC:loopname:break(nn)}
 
 The template C<'{LC:loopname:break(nn)}'> displays "1" (true) if the
 current iteration modulo the number 'nn' is true, "" (false) if not.
@@ -1152,13 +1169,11 @@ The IF and UNLESS templates provide for conditional text blocks based on
 these boolean values.
 
 Note that C<'{LC:loopname:break(2)}'> would be like saying
-C<'{LC:loopname:even}'> if the "even" template existed--which
+C<'{LC:loopname:even}'> if the "even" template existed -- which
 it doesn't.
 
 This feature is designed to allow you to insert things, e.g., column
 headings, at regular intervals in a loop.
-
-=back
 
 =head2 Postponed Expansion/Interpolation
 
@@ -1201,25 +1216,18 @@ have the postponement feature; its expansion cannot be postponed.
 
 =head2 Initialization Methods
 
-=over 8
+=head3 new()
 
-=item new()
+Calling options:
 
-=item new( 'filename' )
-
-=item new( file => 'filename' )
-
-=item new( fh => $filehandle )
-
-=item new( string => $string )
-
-=item new( string => $string, file => 'filename' )
-
-=item new( fh => $filehandle, file => 'filename' )
-
-=item new( file => 'filename', keep_comments => 1 )
-
-=item new( file => 'filename', heredoc_style => '{}' ), etc.
+ new( 'filename' )
+ new( file => 'filename' )
+ new( fh => $filehandle )
+ new( string => $string )
+ new( string => $string, file => 'filename' )
+ new( fh => $filehandle, file => 'filename' )
+ new( file => 'filename', keep_comments => 0 )
+ new( file => 'filename', heredoc_style => '{}' ), etc.
 
 Use C<new()> to create an object, e.g.,
 
@@ -1247,13 +1255,13 @@ C<'interpolates'> to override the default: 1.
 
 C<'expands'> to override the default: 0.
 
-C<'inherits'> to override the default: '' (no inheritance).
+C<'inherits'> to override the default: C<''> (no inheritance).
 
 C<'loop_limit> to override the default: 10.
 
 C<'size_limit'> to override the default: 1_000_000.
 
-C<'include_root'> to override the default: '' (inclusions not
+C<'include_root'> to override the default: C<''> (inclusions not
 allowed).
 
 C<'encoding'> to override the default: 'utf8'.
@@ -1273,32 +1281,27 @@ $Config::Ini::Expanded::encoding, e.g.,
 Alternatively, you may open the file yourself using the desired
 encoding and send the filehandle to new() (or init());
 
-=item init( 'filename' )
+=head3 init()
 
-=item init( file => 'filename' )
+Calling options:
 
-=item init( fh => $filehandle )
+ init( 'filename' )
+ init( file => 'filename' )
+ init( fh => $filehandle )
+ init( string => $string )
+ init( string => $string, file => 'filename' )
+ init( fh => $filehandle, file => 'filename' )
+ init( file => 'filename', keep_comments => 0 )
+ init( file => 'filename', heredoc_style => '{}' ), etc.
 
-=item init( string => $string )
-
-=item init( string => $string, file => 'filename' )
-
-=item init( fh => $filehandle, file => 'filename' )
-
-=item init( file => 'filename', keep_comments => 1 )
-
-=item init( file => 'filename', heredoc_style => '{}' ), etc.
+Example:
 
  my $ini = Config::Ini::Expanded->new();
  $ini->init( 'filename' );
 
-=back
-
 =head2 Get Methods
 
-=over 8
-
-=item get_sections()
+=head3 get_sections()
 
 Use C<get_sections()> to retrieve a list of the sections in the Ini
 file.  They are returned in the order they appear in the file.
@@ -1330,7 +1333,13 @@ is the same as ...
 
 The C<as_string()> method will output the latter.
 
-=item get_names( $section )
+=head3 get_names()
+
+Calling options:
+
+ get_names( $section )
+ get_names( '' )
+ get_names()
 
 Use C<get_names()> to retrieve a list of the names in a given section.
 
@@ -1362,11 +1371,14 @@ The two lines below are equivalent.
  @names = $ini->get_names();
  @names = $ini->get_names( '' );
 
-=item get( $section, $name )
+=head3 get()
 
-=item get( $section, $name, $i )
+Calling options:
 
-=item get( $name )  (assumes $section eq '')
+ get( $section, $name )
+ get( $section, $name, $i )
+ get( $name )  (assumes $section eq '')
+ get( '', $name, $i )
 
 Use C<get()> to retrieve the value or values for a given name.
 
@@ -1396,11 +1408,14 @@ must also pass a null string as the first parameter.
 If the section and name are not found, C<get()> will inherit from any
 inherited objects, and if still not found, will return no value.
 
-=item get_interpolated( $section, $name )
+=head3 get_interpolated()
 
-=item get_interpolated( $section, $name, $i )
+Calling options:
 
-=item get_interpolated( $name )  (assumes $section eq '')
+ get_interpolated( $section, $name )
+ get_interpolated( $section, $name, $i )
+ get_interpolated( $name )  (assumes $section eq '')
+ get_interpolated( '', $name, $i )
 
 Use C<get_interpolated()> to retrieve the value or values for a given
 name just as you would use C<get()> (see above).  But unlike with
@@ -1436,7 +1451,7 @@ C<get_interpolated()> will only do one pass through the value.
 If any template resolves to an undefined value, it will be replaced
 with a null string.
 
-=item interpolate( $value )
+=head3 interpolate( $value )
 
 Use C<interpolate()> to interpolate a value that may contain expansion
 templates. The interpolated value is returned.  Typically you would not
@@ -1449,11 +1464,14 @@ uninterpolated value and expand it later.
  ...
  $value = $ini->interpolate( $value );
 
-=item get_expanded( $section, $name )
+=head3 get_expanded()
 
-=item get_expanded( $section, $name, $i )
+Calling options:
 
-=item get_expanded( $name )  (assumes $section eq '')
+ get_expanded( $section, $name )
+ get_expanded( $section, $name, $i )
+ get_expanded( $name )  (assumes $section eq '')
+ get_expanded( '', $name, $i )
 
 Use C<get_expanded()> to retrieve the value or values for a given name
 just as you would use C<get()> (see above).  But unlike with C<get()>,
@@ -1493,7 +1511,7 @@ loops exceeds C<'loop_limit'>, or the size of the value being expanded
 exceeds C<'size_limit'>), C<get_expanded()> (actually C<expand()>) will
 croak.
 
-=item expand( $value )
+=head3 expand( $value )
 
 Use C<expand()> to expand a value that may contain expansion templates.
 The expanded value is returned.  Typically you would not call
@@ -1510,16 +1528,17 @@ If there is a I<Loop alert> condition (e.g., the number of expansion
 loops exceeds C<'loop_limit'>, or the size of the value being expanded
 exceeds C<'size_limit'>), C<expand()> will croak.
 
-=back
-
 =head2 Add/Set/Put Methods
 
 Here, I<add> denotes pushing values onto the end, I<set>, modifying a
 single value, and I<put>, replacing all values at once.
 
-=over 8
+=head3 add()
 
-=item add( $section, $name, @values )
+Calling options:
+
+ add( $section, $name, @values )
+ add( '', $name, @values )
 
 Use C<add()> to add to the value or values of an option.  If the option
 already has values, the new values will be added to the end (pushed
@@ -1531,7 +1550,12 @@ To add to the 'null section', pass a null string.
 
  $ini->add( '', $name, @values );
 
-=item set( $section, $name, $i, $value )
+=head3 set()
+
+Calling options:
+
+ set( $section, $name, $i, $value )
+ set( '', $name, $i, $value )
 
 Use C<set()> to assign a single value.  Pass C<undef> to remove a value
 altogether.  The C<$i> parameter is the subscript of the values array to
@@ -1544,7 +1568,12 @@ To set a value in the 'null section', pass a null string.
 
  $ini->set( '', $name, 1, $value ); # set second value
 
-=item put( $section, $name, @values )
+=head3 put()
+
+Calling options:
+
+ put( $section, $name, @values )
+ put( '', $name, @values )
 
 Use C<put()> to assign all values at once.  Any existing values are
 overwritten.
@@ -1555,7 +1584,7 @@ To put values in the 'null section', pass a null string.
 
  $ini->put( '', $name, @values );
 
-=item set_var( 'varname', $value )
+=head3 set_var( 'varname', $value )
 
 Use C<set_var()> to assign a value to a C<'varname'>.  This value will
 be substituted into any expansion templates of the form,
@@ -1563,7 +1592,7 @@ C<'{VAR:varname}'>.
 
  $ini->set_var( 'today', scalar localtime );
 
-=item get_var( $varname )
+=head3 get_var( $varname )
 
 Use C<get_var()> to retrieve the value of a varname.  This method is
 called by C<get_expanded()>, C<get_interpolated()>, C<expand()>, and
@@ -1574,7 +1603,7 @@ C<interpolate()> to expand templates of the form, C<'{VAR:varname}'>.
 If the C<$varname> is not found, C<get_var()> will inherit from any
 inherited objects, and if still not found, will return no value.
 
-=item set_loop( 'loopname', $loop_structure )
+=head3 set_loop( 'loopname', $loop_structure )
 
 Use C<set_loop()> to assign a loop structure to a C<'loopname'>.  A
 loop structure is an array of hashes.  The parameter,
@@ -1585,7 +1614,7 @@ form, C<'{LOOP:loopname}...{END_LOOP:loopname}'>.
 
  $ini->set_loop( 'months', [{1=>'jan'},{2=>'feb'},...,{12=>'dec'}] );
 
-=item get_loop( $loopname )
+=head3 get_loop( $loopname )
 
 Use C<get_loop()> to retrieve the loop structure for a loopname.  This
 method is called by C<get_expanded()>, C<get_interpolated()>,
@@ -1598,13 +1627,15 @@ C<'{IF_LOOP...}'> and C<'{UNLESS_LOOP...}'>).
 If the C<$loopname> is not found, C<get_loop()> will inherit from any
 inherited objects, and if still not found, will return no value.
 
-=back
-
 =head2 Delete Methods
 
-=over 8
+=head3 delete_section()
 
-=item delete_section( $section )
+Calling options:
+
+ delete_section( $section )
+ delete_section( '' )
+ delete_section()
 
 Use C<delete_section()> to delete an entire section, including all of
 its options and their values.
@@ -1617,7 +1648,13 @@ string.
  $ini->delete_section();
  $ini->delete_section( '' );
 
-=item delete_name( $section, $name )
+=head3 delete_name()
+
+Calling options:
+
+ delete_name( $section, $name )
+ delete_name( '', $name )
+ delete_name( $name )
 
 Use C<delete_name()> to delete a named option and all of its values
 from a section.
@@ -1636,13 +1673,15 @@ into an array using C<get()>, modify them in that array (e.g., delete
 some), and then use C<put()> to replace the old values with the
 modified ones.
 
-=back
-
 =head2 Other Accessor Methods
 
-=over 8
+=head3 file()
 
-=item file( $filename )
+Calling options:
+
+ file()
+ file( $filename )
+ file( undef )
 
 Use C<file()> to get or set the name of the object's Ini file.  Pass the
 file name to set the value.  Pass C<undef> to remove the C<'file'> attribute
@@ -1652,7 +1691,7 @@ altogether.
  $ini->file( $inifile_name );   # set
  $ini->file( undef );           # remove
 
-=item keep_comments( $boolean )
+=head3 keep_comments( $boolean )
 
 Use C<keep_comments()> to get or set the object's C<'keep_comments'>
 attribute.  The default for this attribute is false, i.e., do not keep
@@ -1662,9 +1701,9 @@ comments.  Pass a true value to turn comments on.
  $ini->keep_comments( $boolean );   # set
 
 C<keep_comments()> accesses the value of the flag that is stored in the
-object--not the value of the global setting.
+object -- not the value of the global setting.
 
-=item heredoc_style( $style )
+=head3 heredoc_style( $style )
 
 Use C<heredoc_style()> to get or set the default style used when
 heredocs are rendered by C<as_string()>.
@@ -1676,9 +1715,9 @@ The value passed should be one of C<< '<<' >>, C<< '<<<<' >>, C<'{'>,
 or C<'{}'>.  The default is C<< '<<' >>.
 
 C<heredoc_style()> accesses the value of the style that is stored in
-the object--not the value of the global setting.
+the object -- not the value of the global setting.
 
-=item interpolates( 1 )
+=head3 interpolates( 1 )
 
 Use C<interpolates()> to get or set the C<'interpolates'> flag.  This
 boolean value will determine if expansion templates in double quoted
@@ -1686,9 +1725,9 @@ values will automatically be interpolated as the Ini file is read in.
 Also see C<$Config::Ini::Expanded::interpolates> for more details.
 
 C<interpolates()> accesses the value of the flag that is stored in the
-object--not the value of the global setting.
+object -- not the value of the global setting.
 
-=item expands( 0 )
+=head3 expands( 0 )
 
 Use C<expands()> to get or set the C<'expands'> flag.  This boolean
 value will determine if expansion templates in double quoted values
@@ -1696,9 +1735,9 @@ will automatically be expanded as the Ini file is read in.  Also see
 C<$Config::Ini::Expanded::expands> for more details.
 
 C<expands()> accesses the value of the flag that is stored in the
-object--not the value of the global setting.
+object -- not the value of the global setting.
 
-=item inherits( [$ini_obj1, $ini_obj2, ... ] )
+=head3 inherits( [$ini_obj1, $ini_obj2, ... ] )
 
 Use C<inherits()> to get or set the C<'inherits'> attribute.  The value
 should be a null string to disable inheritance, or an array reference,
@@ -1719,9 +1758,9 @@ inheritance.  Note also that inheriting from yourself can happen if you
 inherit from an object that inherits from you.
 
 C<inherits()> accesses the value of the attribute that is stored in the
-object--not the value of the global setting.
+object -- not the value of the global setting.
 
-=item loop_limit( 10 )
+=head3 loop_limit( 10 )
 
 Use C<loop_limit()> to get or set the C<'loop_limit'> value.  If an
 expansion loops more than the value of C<'loop_limit'>, the program
@@ -1729,9 +1768,9 @@ will croak with a I<Loop alert>.  Also see
 C<$Config::Ini::Expanded::loop_limit> above for more details.
 
 C<loop_limit()> accesses the limit value that is stored in the
-object--not the value of the global setting.
+object -- not the value of the global setting.
 
-=item size_limit( 1_000_000 )
+=head3 size_limit( 1_000_000 )
 
 Use C<size_limit()> to get or set the C<'size_limit'> value.  If the
 length of an expanded value exceeds the value of C<'size_limit'>, the
@@ -1739,9 +1778,9 @@ program will croak with a I<Loop alert>.  Also see
 C<$Config::Ini::Expanded::size_limit> above for more details.
 
 C<size_limit()> accesses the limit value that is stored in the
-object--not the value of the global setting.
+object -- not the value of the global setting.
 
-=item include_root( $path )
+=head3 include_root( $path )
 
 Use C<include_root()> to get or set the C<'include_root'> value.  This
 value is the path were C<'{INCLUDE:file_path}'> and
@@ -1754,10 +1793,10 @@ expanded, it will croak if C<'include_root'> is not set (or is set to
 "/"), or if C<'file_path'> contains two dots "..".
 
 C<include_root()> accesses the value of the path
-that is stored in the object--not the value of the global
+that is stored in the object -- not the value of the global
 setting.
 
-=item encoding( 'utf8' )
+=head3 encoding( 'utf8' )
 
 Use C<encoding()> to get or set the C<'encoding'> value.  This
 value will determine the character encoding that is assumed when
@@ -1765,11 +1804,11 @@ the ini object is created and when other files are included.
 Also see C<$Config::Ini::Expanded::encoding> for more details.
 
 C<encoding()> accesses the value of the flag that is stored in the
-object--not the value of the global setting.
+object -- not the value of the global setting.
 
 See also C<init()> and GLOBAL SETTINGS above.
 
-=item vattr( $section, $name, $i, $attribute, $value, ... )
+=head3 vattr( $section, $name, $i, $attribute, $value, ... )
 
 Use vattr() to get or set value-level attributes,
 which include:
@@ -1839,17 +1878,15 @@ would be written by as_string() like this:
  name = one
  name = two
 
-=back
-
 =head2 Comments Accessor Methods
 
 An Ini file may contain comments.  Normally, when your program reads an
 Ini file, it doesn't care about comments.  In Config::Ini::Expanded,
 keep_comments is false by default.
 
-Set C<$Config::Ini::Edit::keep_comments = 1;> if you go want the
-Config::Ini::Edit object to retain the comments that are in the file.
-The default is C<0>--comments are not kept.  This applies to C<new()>,
+Set C<$Config::Ini::Expanded::keep_comments = 1;> if you go want the
+Config::Ini::Expanded object to retain the comments that are in the file.
+The default is C<0> -- comments are not kept.  This applies to C<new()>,
 C<init()>, and C<as_string()>, i.e., C<new()> and C<init()> will load
 the comments into the object, and C<as_string()> will output these
 comments.
@@ -1857,9 +1894,7 @@ comments.
 Or you can pass the C<'keep_comments'> parameter to the C<new()> or
 C<init()> methods as described above.
 
-=over 8
-
-=item get_comments( $section, $name, $i )
+=head3 get_comments( $section, $name, $i )
 
 Use C<get_comments()> to return the comments that appear B<above> a
 certain name.  Since names may be repeated (forming an array of
@@ -1868,7 +1903,7 @@ If C<$i> is undefined, C<0> is assumed.
 
  my $comments = $ini->get_comments( $section, $name );
 
-=item get_comment( $section, $name, $i )
+=head3 get_comment( $section, $name, $i )
 
 Use C<get_comment()> (singular) to return the comments that appear
 B<on> the same line as a certain name's assignment.  Pass an array
@@ -1877,7 +1912,7 @@ C<0> is assumed.
 
  $comment = $ini->get_comment( $section, $name );
 
-=item set_comments( $section, $name, $i, @comments )
+=head3 set_comments( $section, $name, $i, @comments )
 
 Use C<set_comments()> to specify comments for a given occurrence of a
 name.  When C<as_string()> is called, these comments will appear
@@ -1888,7 +1923,7 @@ B<above> the name.
 In an Ini file, comments must begin with C<'#'> or C<';'> and end with
 a newline.  If your comments don't, C<'# '> and C<"\n"> will be added.
 
-=item set_comment( $section, $name, $i, @comments )
+=head3 set_comment( $section, $name, $i, @comments )
 
 Use C<set_comment()> to specify comments for a given occurrence of a
 name.  When C<as_string()> is called, these comments will appear B<on>
@@ -1900,7 +1935,7 @@ In an Ini file, comments must begin with C<'#'> or C<';'>.  If your
 comments don't, C<'# '> will be added.  If you pass an array of
 comments, they will be strung together on one line.
 
-=item get_section_comments( $section )
+=head3 get_section_comments( $section )
 
 Use C<get_section_comments()> to retrieve the comments that appear B<above>
 the C<[section]> line, e.g.,
@@ -1911,7 +1946,7 @@ the C<[section]> line, e.g.,
  # $comments eq "# Comment 1\n"
  my $comments = $ini->get_section_comments( $section );
 
-=item get_section_comment( $section )
+=head3 get_section_comment( $section )
 
 Use C<get_section_comment()> (note: singular 'comment') to retrieve the
 comment that appears B<on> the same line as the C<[section]> line.
@@ -1922,36 +1957,37 @@ comment that appears B<on> the same line as the C<[section]> line.
  # $comment eq " # Comment 2\n"
  my $comment = $ini->get_section_comment( $section );
 
-=item set_section_comments( $section, @comments )
+=head3 set_section_comments( $section, @comments )
 
 Use C<set_section_comments()> to set the value of the comments above
 the C<[section]> line.
 
  $ini->set_section_comments( $section, $comments );
 
-=item set_section_comment( $section, @comments )
+=head3 set_section_comment( $section, @comments )
 
 Use C<set_section_comment()> (singular) to set the value of the comment
 at the end of the C<[section]> line.
 
  $ini->set_section_comment( $section, $comment );
 
-=back
-
 =head2 Recreating the Ini File Structure
 
-=over 8
-
-=item as_string()
+=head3 as_string()
 
 Use C<as_string()> to dump the Config::Ini::Expanded object in an Ini
-file format.  If C<$Config::Ini::Edit::keep_comments> is true, the
+file format.  If C<$Config::Ini::Expanded::keep_comments> is true, the
 comments will be included.
 
  print INIFILE $ini->as_string();
 
 The value C<as_string()> returns is not guaranteed to be exactly what
-was in the original Ini file.  But you can expect the following:
+was in the original Ini file.  This is particularly true for files
+processed by this module, because quoted values may be interpolated
+right away.  For this reason, if you need to edit an Ini file, use
+the Config::Ini::Edit module.
+
+But barring all that, you can expect the following:
 
 - All sections and names will be retained.
 
@@ -2003,8 +2039,6 @@ will be output as
  name1 = another
  name2 = value2
 
-=back
-
 =head1 SEE ALSO
 
 Config::Ini,
@@ -2019,7 +2053,7 @@ Brad Baxter, E<lt>bmb@mail.libs.uga.eduE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2009 by Brad Baxter
+Copyright (C) 2010 by Brad Baxter
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.7 or,

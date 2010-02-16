@@ -2,6 +2,7 @@ Changes
 Makefile.PL
 MANIFEST
 README
+Config-Ini-Expanded.tiddlywiki
 t/001-ini-expanded-string-file-fh.t
 t/002-ini-expanded-general.t
 t/003-ini-expanded-expand.t
