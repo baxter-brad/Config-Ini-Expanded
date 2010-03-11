@@ -98,15 +98,23 @@ out = <<
 cmt = IF/UNLESS_VAR VAR ELSE
 tmpl = <<
 1.{IF_VAR:var1}Var1:{VAR:var1}{ELSE}No var1{END_IF_VAR:var1}
-2.{IF_VAR:bogus}Var1:{VAR:var1}{ELSE}No bogus{END_IF_VAR:bogus}
-3.{UNLESS_VAR:var1}No var1{ELSE}Var1:{VAR:var1}{END_UNLESS_VAR:var1}
-4.{UNLESS_VAR:bogus}No bogus{ELSE}Var1:{VAR:var1}{END_UNLESS_VAR:bogus}
+2.{IF_VAR:var1}Var1:{VAR:var1}{ELSE:var1}No var1{END_IF_VAR:var1}
+3.{IF_VAR:bogus}Var1:{VAR:var1}{ELSE}No bogus{END_IF_VAR:bogus}
+4.{IF_VAR:bogus}Var1:{VAR:var1}{ELSE:bogus}No bogus{END_IF_VAR:bogus}
+5.{UNLESS_VAR:var1}No var1{ELSE}Var1:{VAR:var1}{END_UNLESS_VAR:var1}
+6.{UNLESS_VAR:var1}No var1{ELSE:var1}Var1:{VAR:var1}{END_UNLESS_VAR:var1}
+7.{UNLESS_VAR:bogus}No bogus{ELSE}Var1:{VAR:var1}{END_UNLESS_VAR:bogus}
+8.{UNLESS_VAR:bogus}No bogus{ELSE:bogus}Var1:{VAR:var1}{END_UNLESS_VAR:bogus}
 <<
 out = <<
 1.Var1:Var1
-2.No bogus
-3.Var1:Var1
+2.Var1:Var1
+3.No bogus
 4.No bogus
+5.Var1:Var1
+6.Var1:Var1
+7.No bogus
+8.No bogus
 <<
 
 cmt = IF/UNLESS_INI INI
@@ -126,15 +134,23 @@ out = <<
 cmt = IF/UNLESS_INI INI ELSE
 tmpl = <<
 1.{IF_INI:to_test:ini1}Ini1:{INI:to_test:ini1}{ELSE}No ini1{END_IF_INI:to_test:ini1}
-2.{IF_INI:bogus:bogus}Ini1:{INI:to_test:ini1}{ELSE}No bogus{END_IF_INI:bogus:bogus}
-3.{UNLESS_INI:to_test:ini1}No ini1{ELSE}Ini1:{INI:to_test:ini1}{END_UNLESS_INI:to_test:ini1}
-4.{UNLESS_INI:bogus:bogus}No bogus{ELSE}Ini1:{INI:to_test:ini1}{END_UNLESS_INI:bogus:bogus}
+2.{IF_INI:to_test:ini1}Ini1:{INI:to_test:ini1}{ELSE:to_test:ini1}No ini1{END_IF_INI:to_test:ini1}
+3.{IF_INI:bogus:bogus}Ini1:{INI:to_test:ini1}{ELSE}No bogus{END_IF_INI:bogus:bogus}
+4.{IF_INI:bogus:bogus}Ini1:{INI:to_test:ini1}{ELSE:bogus:bogus}No bogus{END_IF_INI:bogus:bogus}
+5.{UNLESS_INI:to_test:ini1}No ini1{ELSE}Ini1:{INI:to_test:ini1}{END_UNLESS_INI:to_test:ini1}
+6.{UNLESS_INI:to_test:ini1}No ini1{ELSE:to_test:ini1}Ini1:{INI:to_test:ini1}{END_UNLESS_INI:to_test:ini1}
+7.{UNLESS_INI:bogus:bogus}No bogus{ELSE}Ini1:{INI:to_test:ini1}{END_UNLESS_INI:bogus:bogus}
+8.{UNLESS_INI:bogus:bogus}No bogus{ELSE:bogus:bogus}Ini1:{INI:to_test:ini1}{END_UNLESS_INI:bogus:bogus}
 <<
 out = <<
 1.Ini1:Ini1
-2.No bogus
-3.Ini1:Ini1
+2.Ini1:Ini1
+3.No bogus
 4.No bogus
+5.Ini1:Ini1
+6.Ini1:Ini1
+7.No bogus
+8.No bogus
 <<
 
 cmt = IF/UNLESS_LOOP LOOP/LVAR
@@ -154,15 +170,23 @@ out = <<
 cmt = IF/UNLESS_LOOP LOOP/LVAR ELSE
 tmpl = <<
 1.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{ELSE}No loop1{END_IF_LOOP:loop1}
-2.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{ELSE}No bogus{END_IF_LOOP:bogus}
-3.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
-4.{UNLESS_LOOP:bogus}No bogus{ELSE}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+2.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{ELSE:loop1}No loop1{END_IF_LOOP:loop1}
+3.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{ELSE}No bogus{END_IF_LOOP:bogus}
+4.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{ELSE:bogus}No bogus{END_IF_LOOP:bogus}
+5.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+6.{UNLESS_LOOP:loop1}No loop1{ELSE:loop1}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+7.{UNLESS_LOOP:bogus}No bogus{ELSE}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+8.{UNLESS_LOOP:bogus}No bogus{ELSE:bogus}Loop1:{LOOP:loop1}{LVAR:code},{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
 <<
 out = <<
 1.Loop1:code1,code2,code3,
-2.No bogus
-3.Loop1:code1,code2,code3,
+2.Loop1:code1,code2,code3,
+3.No bogus
 4.No bogus
+5.Loop1:code1,code2,code3,
+6.Loop1:code1,code2,code3,
+7.No bogus
+8.No bogus
 <<
 
 cmt = IF/UNLESS_LVAR LVAR
@@ -182,15 +206,23 @@ out = <<
 cmt = IF/UNLESS_LVAR LVAR ELSE
 tmpl = <<
 1.{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE}No code,{END_IF_LVAR:code}{END_LOOP:loop1}
-2.{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}
-3.{LOOP:loop1}{UNLESS_LVAR:code}No code,{ELSE}{LVAR:code},{END_UNLESS_LVAR:code}{END_LOOP:loop1}
-4.{LOOP:loop1}{UNLESS_LVAR:bogus}No bogus,{ELSE}{LVAR:code},{END_UNLESS_LVAR:bogus}{END_LOOP:loop1}
+2.{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE:code}No code,{END_IF_LVAR:code}{END_LOOP:loop1}
+3.{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}
+4.{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE:bogus}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}
+5.{LOOP:loop1}{UNLESS_LVAR:code}No code,{ELSE}{LVAR:code},{END_UNLESS_LVAR:code}{END_LOOP:loop1}
+6.{LOOP:loop1}{UNLESS_LVAR:code}No code,{ELSE:code}{LVAR:code},{END_UNLESS_LVAR:code}{END_LOOP:loop1}
+7.{LOOP:loop1}{UNLESS_LVAR:bogus}No bogus,{ELSE}{LVAR:code},{END_UNLESS_LVAR:bogus}{END_LOOP:loop1}
+8.{LOOP:loop1}{UNLESS_LVAR:bogus}No bogus,{ELSE:bogus}{LVAR:code},{END_UNLESS_LVAR:bogus}{END_LOOP:loop1}
 <<
 out = <<
 1.code1,code2,code3,
-2.No bogus,No bogus,No bogus,
-3.code1,code2,code3,
+2.code1,code2,code3,
+3.No bogus,No bogus,No bogus,
 4.No bogus,No bogus,No bogus,
+5.code1,code2,code3,
+6.code1,code2,code3,
+7.No bogus,No bogus,No bogus,
+8.No bogus,No bogus,No bogus,
 <<
 
 cmt = IF/UNLESS_LOOP LOOP IF/UNLESS_LVAR LVAR
@@ -218,23 +250,39 @@ out = <<
 cmt = IF/UNLESS_LOOP LOOP ELSE IF/UNLESS_LVAR LVAR ELSE
 tmpl = <<
 1.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{ELSE}No loop1{END_IF_LOOP:loop1}
-2.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{ELSE}No loop1{END_IF_LOOP:loop1}
-3.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{ELSE}No loop bogus{END_IF_LOOP:bogus}
-4.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE}No bogus,{{END_IF_LVAR:bogus}{END_LOOP:loop1}{ELSE}No loop bogus{END_IF_LOOP:bogus}
-5.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
-6.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
-7.{UNLESS_LOOP:bogus}No loop bogus{ELSE}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
-8.{UNLESS_LOOP:bogus}No loop bogus{ELSE}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+2.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE:code}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{ELSE:loop1}No loop1{END_IF_LOOP:loop1}
+3.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{ELSE}No loop1{END_IF_LOOP:loop1}
+4.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE:bogus}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{ELSE:loop1}No loop1{END_IF_LOOP:loop1}
+5.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{ELSE}No loop bogus{END_IF_LOOP:bogus}
+6.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE:code}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{ELSE:bogus}No loop bogus{END_IF_LOOP:bogus}
+7.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{ELSE}No loop bogus{END_IF_LOOP:bogus}
+8.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE:bogus}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{ELSE:bogus}No loop bogus{END_IF_LOOP:bogus}
+9.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+10.{UNLESS_LOOP:loop1}No loop1{ELSE:loop1}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE:code}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+11.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+12.{UNLESS_LOOP:loop1}No loop1{ELSE:loop1}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE:bogus}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+13.{UNLESS_LOOP:bogus}No loop bogus{ELSE}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+14.{UNLESS_LOOP:bogus}No loop bogus{ELSE:bogus}Loop1:{LOOP:loop1}{IF_LVAR:code}{LVAR:code},{ELSE:code}No code,{END_IF_LVAR:code}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+15.{UNLESS_LOOP:bogus}No loop bogus{ELSE}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+16.{UNLESS_LOOP:bogus}No loop bogus{ELSE:bogus}Loop1:{LOOP:loop1}{IF_LVAR:bogus}{LVAR:code},{ELSE:bogus}No bogus,{END_IF_LVAR:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
 <<
 out = <<
 1.Loop1:code1,code2,code3,
-2.Loop1:No bogus,No bogus,No bogus,
-3.No loop bogus
-4.No loop bogus
-5.Loop1:code1,code2,code3,
-6.Loop1:No bogus,No bogus,No bogus,
+2.Loop1:code1,code2,code3,
+3.Loop1:No bogus,No bogus,No bogus,
+4.Loop1:No bogus,No bogus,No bogus,
+5.No loop bogus
+6.No loop bogus
 7.No loop bogus
 8.No loop bogus
+9.Loop1:code1,code2,code3,
+10.Loop1:code1,code2,code3,
+11.Loop1:No bogus,No bogus,No bogus,
+12.Loop1:No bogus,No bogus,No bogus,
+13.No loop bogus
+14.No loop bogus
+15.No loop bogus
+16.No loop bogus
 <<
 
 #---resume
@@ -256,15 +304,23 @@ out = <<
 cmt = IF/UNLESS_LOOP LOOP/LC ELSE
 tmpl = <<
 1.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{ELSE}No loop1{END_IF_LOOP:loop1}
-2.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{ELSE}No bogus{END_IF_LOOP:bogus}
-3.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
-4.{UNLESS_LOOP:bogus}No bogus{ELSE}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+2.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{ELSE:loop1}No loop1{END_IF_LOOP:loop1}
+3.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{ELSE}No bogus{END_IF_LOOP:bogus}
+4.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{ELSE:bogus}No bogus{END_IF_LOOP:bogus}
+5.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+6.{UNLESS_LOOP:loop1}No loop1{ELSE:loop1}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+7.{UNLESS_LOOP:bogus}No bogus{ELSE}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+8.{UNLESS_LOOP:bogus}No bogus{ELSE:bogus}Loop1:{LOOP:loop1}{LC:first},{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
 <<
 out = <<
 1.Loop1:1,,,
-2.No bogus
-3.Loop1:1,,,
+2.Loop1:1,,,
+3.No bogus
 4.No bogus
+5.Loop1:1,,,
+6.Loop1:1,,,
+7.No bogus
+8.No bogus
 <<
 
 cmt = IF/UNLESS_LC LC
@@ -284,15 +340,23 @@ out = <<
 cmt = IF/UNLESS_LC LC ELSE
 tmpl = <<
 1.{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE}Not first,{END_IF_LC:first}{END_LOOP:loop1}
-2.{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}
-3.{LOOP:loop1}{UNLESS_LC:first}Not first,{ELSE}{LC:first},{END_UNLESS_LC:first}{END_LOOP:loop1}
-4.{LOOP:loop1}{UNLESS_LC:bogus}Not bogus,{ELSE}{LC:first},{END_UNLESS_LC:bogus}{END_LOOP:loop1}
+2.{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE:first}Not first,{END_IF_LC:first}{END_LOOP:loop1}
+3.{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}
+4.{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE:bogus}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}
+5.{LOOP:loop1}{UNLESS_LC:first}Not first,{ELSE}{LC:first},{END_UNLESS_LC:first}{END_LOOP:loop1}
+6.{LOOP:loop1}{UNLESS_LC:first}Not first,{ELSE:first}{LC:first},{END_UNLESS_LC:first}{END_LOOP:loop1}
+7.{LOOP:loop1}{UNLESS_LC:bogus}Not bogus,{ELSE}{LC:first},{END_UNLESS_LC:bogus}{END_LOOP:loop1}
+8.{LOOP:loop1}{UNLESS_LC:bogus}Not bogus,{ELSE:bogus}{LC:first},{END_UNLESS_LC:bogus}{END_LOOP:loop1}
 <<
 out = <<
 1.1,Not first,Not first,
-2.Not bogus,Not bogus,Not bogus,
-3.1,Not first,Not first,
+2.1,Not first,Not first,
+3.Not bogus,Not bogus,Not bogus,
 4.Not bogus,Not bogus,Not bogus,
+5.1,Not first,Not first,
+6.1,Not first,Not first,
+7.Not bogus,Not bogus,Not bogus,
+8.Not bogus,Not bogus,Not bogus,
 <<
 
 cmt = IF/UNLESS_LOOP LOOP IF/UNLESS_LC LC
@@ -320,23 +384,39 @@ out = <<
 cmt = IF/UNLESS_LOOP LOOP ELSE IF/UNLESS_LC LC ELSE
 tmpl = <<
 1.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE}Not first,{END_IF_LC:first}{END_LOOP:loop1}{ELSE}No loop1{END_IF_LOOP:loop1}
-2.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{ELSE}No loop1{END_IF_LOOP:loop1}
-3.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE}Not first,{END_IF_LC:first}{END_LOOP:loop1}{ELSE}No loop bogus{END_IF_LOOP:bogus}
-4.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE}Not bogus,{{END_IF_LC:bogus}{END_LOOP:loop1}{ELSE}No loop bogus{END_IF_LOOP:bogus}
-5.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE}Not first,{END_IF_LC:first}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
-6.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
-7.{UNLESS_LOOP:bogus}No loop bogus{ELSE}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE}Not first,{END_IF_LC:first}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
-8.{UNLESS_LOOP:bogus}No loop bogus{ELSE}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+2.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE:first}Not first,{END_IF_LC:first}{END_LOOP:loop1}{ELSE:loop1}No loop1{END_IF_LOOP:loop1}
+3.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{ELSE}No loop1{END_IF_LOOP:loop1}
+4.{IF_LOOP:loop1}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE:bogus}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{ELSE:loop1}No loop1{END_IF_LOOP:loop1}
+5.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE}Not first,{END_IF_LC:first}{END_LOOP:loop1}{ELSE}No loop bogus{END_IF_LOOP:bogus}
+6.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE:first}Not first,{END_IF_LC:first}{END_LOOP:loop1}{ELSE:bogus}No loop bogus{END_IF_LOOP:bogus}
+7.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{ELSE}No loop bogus{END_IF_LOOP:bogus}
+8.{IF_LOOP:bogus}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE:bogus}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{ELSE:bogus}No loop bogus{END_IF_LOOP:bogus}
+9.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE}Not first,{END_IF_LC:first}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+10.{UNLESS_LOOP:loop1}No loop1{ELSE:loop1}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE:first}Not first,{END_IF_LC:first}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+11.{UNLESS_LOOP:loop1}No loop1{ELSE}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+12.{UNLESS_LOOP:loop1}No loop1{ELSE:loop1}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE:bogus}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:loop1}
+13.{UNLESS_LOOP:bogus}No loop bogus{ELSE}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE}Not first,{END_IF_LC:first}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+14.{UNLESS_LOOP:bogus}No loop bogus{ELSE:bogus}Loop1:{LOOP:loop1}{IF_LC:first}{LC:first},{ELSE:first}Not first,{END_IF_LC:first}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+15.{UNLESS_LOOP:bogus}No loop bogus{ELSE}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
+16.{UNLESS_LOOP:bogus}No loop bogus{ELSE:bogus}Loop1:{LOOP:loop1}{IF_LC:bogus}{LC:first},{ELSE:bogus}Not bogus,{END_IF_LC:bogus}{END_LOOP:loop1}{END_UNLESS_LOOP:bogus}
 <<
 out = <<
 1.Loop1:1,Not first,Not first,
-2.Loop1:Not bogus,Not bogus,Not bogus,
-3.No loop bogus
-4.No loop bogus
-5.Loop1:1,Not first,Not first,
-6.Loop1:Not bogus,Not bogus,Not bogus,
+2.Loop1:1,Not first,Not first,
+3.Loop1:Not bogus,Not bogus,Not bogus,
+4.Loop1:Not bogus,Not bogus,Not bogus,
+5.No loop bogus
+6.No loop bogus
 7.No loop bogus
 8.No loop bogus
+9.Loop1:1,Not first,Not first,
+10.Loop1:1,Not first,Not first,
+11.Loop1:Not bogus,Not bogus,Not bogus,
+12.Loop1:Not bogus,Not bogus,Not bogus,
+13.No loop bogus
+14.No loop bogus
+15.No loop bogus
+16.No loop bogus
 <<
 
 #---------------------------------------------------------------------

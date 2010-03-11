@@ -186,6 +186,31 @@ tmpl = <<:chomp
 <<
 out = "{INI:to_test:spreadsheet}"
 
+cmt  = Spreadsheet (partially qualified and filtered)
+tmpl = <<:chomp
+{LOOP:sales}Spreadsheet:
+    {LOOP:periods}
+        {LOOP:period_sales}
+            {IF_LC:first}
+.........
+                {LOOP:columns}|
+                    {LVAR:name}
+                {END_LOOP:columns}
+
+                {LVAR:periods:name}
+            {ELSE:first}...
+            {END_IF_LC:first}|
+                {LVAR:name}
+            {LOOP:color_sales}|
+                {LVAR:sales}
+            {END_LOOP:color_sales}
+
+        {END_LOOP:period_sales}
+    {END_LOOP:periods}
+{END_LOOP:sales}
+<<
+out = "{INI:to_test:spreadsheet}"
+
 cmt  = Spreadsheet (qualified and filtered)
 tmpl = <<:chomp
 {LOOP:sales}Spreadsheet:

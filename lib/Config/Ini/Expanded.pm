@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.08
+VERSION: 1.09
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.08';
+our $VERSION = '1.09';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -694,14 +694,21 @@ sub get_expanded {
 #---------------------------------------------------------------------
 ## $ini->expand( $value, $section, $name )
 
-# Note: two tags with the same name may not be nested, e.g.,
+# Note: two tags with the same name may not be (successfully) nested,
+#       e.g.,
+#
 #       {IF_VAR:a}...{IF_VAR:a}...{END_IF_VAR:a}...{END_IF_VAR:a}
+#
 #       This would be parsed similar to the following:
+#
 #       {IF_VAR:a}...{IF_VAR:b}...{END_IF_VAR:a}...{END_IF_VAR:b}
+#
 #       and would not accomplish the (probably) desired result.
+#
 #       We take the liberal view: we don't object to the second badly
 #       nested set of blocks, and we similarly don't object to the
-#       first.
+#       first.  It's up to the user (in the current version anyway)
+#       to detect a problem in the output.
 
 sub expand {
     my ( $self, $value, $section, $name ) = @_;
@@ -718,10 +725,10 @@ sub expand {
         #       does not rely on whether or not we're in a LOOP
         #       context.
 
-        if( $value =~ /{ELSE}/ ) {
+        if( $value =~ /{ELSE (?: : $Var_rx (?: : $Var_rx )* )? }/x ) {
             $changes += $value =~
                 s/ (?<!!) ( { (IF|UNLESS) _ ([A-Z]+) :
-                          ($Var_rx (?: : $Var_rx (?: : $Var_rx )? )? ) } )  # $1 (begin)
+                          ($Var_rx (?: : $Var_rx (?: : $Var_rx )* )? ) } )  # $1 (begin)
                           ( .*?                                          )  # $5 (inner)
                           ( { END_ \2 _ \3 : \4 }                        )  # $6 (end)
                           /$self->_disambiguate_else( $2, $3, $4, $5, $1, $6 )/goxes;
@@ -1180,39 +1187,55 @@ sub _expand_loop {
 
 # Notes:
 #
-# [1]: If there's an (unqualified) {ELSE} after recursing, it belongs
+# [1]: This code also disambiguates an ELSE that is qualified only
+#      with a name, e.g., {IF_VAR:a} ... {ELSE:a} ... {END_IF_VAR:a}
+#
+# [2]: If there's an (unqualified) {ELSE} after recursing, it belongs
 #      to us, i.e., to this call's outer IF/UNLESS block (i.e., the
 #      one named $name).
-# [2]: If there are two or more (unqualified) {ELSE}'s, the first one
+#
+# [3]: If there is an extraneous unqualifed {ELSE}, i.e., one that
+#      is in the same IF/UNLESS block as that block's qualified
+#      {ELSE...}, the unqualified {ELSE} is left alone -- whatever the
+#      order it appears, i.e., it's not necessarily an error.
+#
+# [4]: If there are two or more (unqualified) {ELSE}'s, the first one
 #      will be disambiguated and the rest left alone.  This should
 #      not cause looping, because the IF/UNLESS's should be gone the
 #      next time the ELSE is seen.
-# [3]: If there is an extraneous unqualifed {ELSE}, i.e., one that
-#      is in the same IF/UNLESS block as that block's qualified
-#      {ELSE...}, the unqualified {ELSE} is left alone--(i.e., it's
-#      not necessarily an error)--whatever the order it appears.
 
 sub _disambiguate_else {
     my ( $self, $if_unless, $type, $name, $inner, $begin, $end ) = @_;
 
-    # first, expand nested IF/UNLESS's by recursing
+    # first, expand nested IF/UNLESS's by recursing (in case the {ELSE}
+    # we saw is deeper down)
     $inner =~ 
         s/ (?<!!) ( { (IF|UNLESS) _ ([A-Z]+) :
-                  ($Var_rx (?: : $Var_rx (?: : $Var_rx )? )? ) } )  # $1 (begin)
+                  ($Var_rx (?: : $Var_rx (?: : $Var_rx )* )? ) } )  # $1 (begin)
                   ( .*?                                          )  # $5 (inner)
                   ( { END_ \2 _ \3 : \4 }                        )  # $6 (end)
                   /$self->_disambiguate_else( $2, $3, $4, $5, $1, $6 )/goxes;
 
-    # now look for any remaining unqualifed ELSE
-    if( $inner =~ /{ELSE}/ ) {
+    # now look for any remaining unqualifed {ELSE}
+    # [1] you can give an otherwise ambiguous {ELSE} a name with
+    #     {ELSE:name}
+    if( $inner =~ /{ELSE (?: : ( $Var_rx (?: : $Var_rx )* ))? }/x ) {
+        my $given = $1;
 
-        # [1]: disambiguate the ELSE
+        # [2]: disambiguate the ELSE
         my $explicit_else = "{ELSE_${if_unless}_$type:$name}";
 
-        # [2]: we're changing just the first one we find
         # [3]: unless there's already a qualified one
-        $inner =~ s/{ELSE}/$explicit_else/
-            unless $inner =~ /$explicit_else/;
+        unless( $inner =~ /$explicit_else/ ) {
+
+            croak "Given name: '$given' does not match enclosing name: '$name'."
+                if defined $given and $given ne $name; 
+
+            # [4]: we're changing just the first one we find
+            $inner =~ s/{ELSE (?: : $Var_rx (?: : $Var_rx )* )? }
+                       /$explicit_else/x;
+
+        }
     }
 
     return "$begin$inner$end";
@@ -1245,9 +1268,9 @@ sub interpolate {
 
     for ( $value ) {  no warnings 'uninitialized';
 
-        if( /{ELSE}/ ) {
+        if( /{ELSE (?: : $Var_rx (?: : $Var_rx )* )? }/x ) {
             s/ (?<!!) ( { (IF|UNLESS) _ ([A-Z]+) :
-                      ($Var_rx (?: : $Var_rx (?: : $Var_rx )? )? ) } )  # $1 (begin)
+                      ($Var_rx (?: : $Var_rx (?: : $Var_rx )* )? ) } )  # $1 (begin)
                       ( .*?                                          )  # $5 (inner)
                       ( { END_ \2 _ \3 : \4 }                        )  # $6 (end)
                       /$self->_disambiguate_else( $2, $3, $4, $5, $1, $6 )/goxes;

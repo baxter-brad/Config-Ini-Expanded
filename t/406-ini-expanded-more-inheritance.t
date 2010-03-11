@@ -192,11 +192,29 @@ tmpl = <<:chomp
 <<
 out = "{INI:to_test:spreadsheet}"
 
+cmt  = Spreadsheet (partially qualified {ELSE})
+tmpl = <<:chomp
+{LOOP:sales}Spreadsheet:{LOOP:periods}{LOOP:period_sales}{IF_LC:first}
+         {LOOP:columns} {LVAR:name}{END_LOOP:columns}
+{LVAR:periods:name}{ELSE:first}   {END_IF_LC:first} {LVAR:name}{LOOP:color_sales} {LVAR:sales}{END_LOOP:color_sales}
+{END_LOOP:period_sales}{END_LOOP:periods}{END_LOOP:sales}
+<<
+out = "{INI:to_test:spreadsheet}"
+
+cmt  = Spreadsheet (again, partially qualified {ELSE})
+tmpl = <<:chomp
+{LOOP:sales}Spreadsheet:{LOOP:sales:periods}{LOOP:periods:period_sales}{IF_LC:period_sales:first}
+         {LOOP:sales:columns} {LVAR:columns:name}{END_LOOP:sales:columns}
+{LVAR:periods:name}{ELSE:period_sales:first}   {END_IF_LC:period_sales:first} {LVAR:period_sales:name}{LOOP:period_sales:color_sales} {LVAR:color_sales:sales}{END_LOOP:period_sales:color_sales}
+{END_LOOP:periods:period_sales}{END_LOOP:sales:periods}{END_LOOP:sales}
+<<
+out = "{INI:to_test:spreadsheet}"
+
 cmt  = Spreadsheet (fully qualified)
 tmpl = <<:chomp
 {LOOP:sales}Spreadsheet:{LOOP:sales:periods}{LOOP:periods:period_sales}{IF_LC:period_sales:first}
          {LOOP:sales:columns} {LVAR:columns:name}{END_LOOP:sales:columns}
-{LVAR:periods:name}{ELSE}   {END_IF_LC:period_sales:first} {LVAR:period_sales:name}{LOOP:period_sales:color_sales} {LVAR:color_sales:sales}{END_LOOP:period_sales:color_sales}
+{LVAR:periods:name}{ELSE_IF_LC:period_sales:first}   {END_IF_LC:period_sales:first} {LVAR:period_sales:name}{LOOP:period_sales:color_sales} {LVAR:color_sales:sales}{END_LOOP:period_sales:color_sales}
 {END_LOOP:periods:period_sales}{END_LOOP:sales:periods}{END_LOOP:sales}
 <<
 out = "{INI:to_test:spreadsheet}"

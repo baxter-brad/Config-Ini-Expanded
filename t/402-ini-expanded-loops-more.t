@@ -115,10 +115,24 @@ tmpl = Trees: {LOOP:forest}{UNLESS_LC:last}{LVAR:tree}, {ELSE}and {LVAR:tree}{EN
  out = Trees: trident maple, southern live oak, longleaf pine, maidenhair tree, american beech, and american chestnut.
  cmt = UNLESS_LC:last with ELSE
 
+tmpl = Trees: {LOOP:forest}{UNLESS_LC:last}{LVAR:tree}, {ELSE:last}and {LVAR:tree}{END_UNLESS_LC:last}{END_LOOP:forest}.
+ out = Trees: trident maple, southern live oak, longleaf pine, maidenhair tree, american beech, and american chestnut.
+ cmt = UNLESS_LC:last with ELSE:last
+
 cmt  = UNLESS_LC:last with ELSE, IF_LC:break(3) with ELSE
 tmpl = <<:chomp
 Trees: {LOOP:forest}{UNLESS_LC:last}{LVAR:tree},{IF_LC:break(3)}
 {ELSE} {END_IF_LC:break(3)}{ELSE}and {LVAR:tree}{END_UNLESS_LC:last}{END_LOOP:forest}.
+<<
+out = <<:chomp
+Trees: trident maple, southern live oak, longleaf pine,
+maidenhair tree, american beech, and american chestnut.
+<<
+
+cmt  = UNLESS_LC:last with ELSE:last, IF_LC:break(3) with ELSE:break(3)
+tmpl = <<:chomp
+Trees: {LOOP:forest}{UNLESS_LC:last}{LVAR:tree},{IF_LC:break(3)}
+{ELSE:break(3)} {END_IF_LC:break(3)}{ELSE:last}and {LVAR:tree}{END_UNLESS_LC:last}{END_LOOP:forest}.
 <<
 out = <<:chomp
 Trees: trident maple, southern live oak, longleaf pine,
@@ -165,6 +179,19 @@ out = <<:chomp
  acer buergerianum quercus virginiana pinus palustris ginkgo biloba fagus grandifolia castanea dentata
 <<
 
+cmt  = IF_LVAR, UNLESS_LVAR with ELSE (named)
+tmpl = <<:join:chomp
+{LOOP:forest}
+{IF_LVAR:tree}
+{UNLESS_LVAR:species} No species?{ELSE:species} {LVAR:species}
+{END_UNLESS_LVAR:species}
+{END_IF_LVAR:tree}
+{END_LOOP:forest}
+<<
+out = <<:chomp
+ acer buergerianum quercus virginiana pinus palustris ginkgo biloba fagus grandifolia castanea dentata
+<<
+
 cmt  = IF_LVAR, UNLESS_LVAR with ELSE (explicit)
 tmpl = <<:join:chomp
 {LOOP:forest}
@@ -187,6 +214,20 @@ tmpl = <<:join:chomp
 {UNLESS_LVAR:species}
 {IF_LVAR:tree} No species?{END_IF_LVAR:tree}
 {ELSE}
+{IF_LVAR:tree} {LVAR:species}{END_IF_LVAR:tree}
+{END_UNLESS_LVAR:species}
+{END_LOOP:forest}
+<<
+out = <<:chomp
+ acer buergerianum quercus virginiana pinus palustris ginkgo biloba fagus grandifolia castanea dentata
+<<
+
+cmt  = UNLESS_LVAR, IF_LVAR, positive, ELSE named
+tmpl = <<:join:chomp
+{LOOP:forest}
+{UNLESS_LVAR:species}
+{IF_LVAR:tree} No species?{END_IF_LVAR:tree}
+{ELSE:species}
 {IF_LVAR:tree} {LVAR:species}{END_IF_LVAR:tree}
 {END_UNLESS_LVAR:species}
 {END_LOOP:forest}
@@ -226,9 +267,37 @@ Tree: american beech, Order: fagales
 Tree: american chestnut, Order: fagales
 <<
 
+cmt  = IF_LOOP no, ELSE(named), LOOP
+tmpl = <<:chomp
+{IF_LOOP:loop_null}Ooops, there's a loop?{ELSE:loop_null}{LOOP:forest}Tree: {LVAR:tree}, Order: {LVAR:order}
+{END_LOOP:forest}{END_IF_LOOP:loop_null}
+<<
+out = <<
+Tree: trident maple, Order: sapindales
+Tree: southern live oak, Order: fagales
+Tree: longleaf pine, Order: pinales
+Tree: maidenhair tree, Order: ginkgoales
+Tree: american beech, Order: fagales
+Tree: american chestnut, Order: fagales
+<<
+
 cmt  = UNLESS_LOOP no, ELSE, LOOP
 tmpl = <<:chomp
 {UNLESS_LOOP:forest}Ooops, no loop?{ELSE}{LOOP:forest}Tree: {LVAR:tree}, Order: {LVAR:order}
+{END_LOOP:forest}{END_UNLESS_LOOP:forest}
+<<
+out = <<
+Tree: trident maple, Order: sapindales
+Tree: southern live oak, Order: fagales
+Tree: longleaf pine, Order: pinales
+Tree: maidenhair tree, Order: ginkgoales
+Tree: american beech, Order: fagales
+Tree: american chestnut, Order: fagales
+<<
+
+cmt  = UNLESS_LOOP no, ELSE(named), LOOP
+tmpl = <<:chomp
+{UNLESS_LOOP:forest}Ooops, no loop?{ELSE:forest}{LOOP:forest}Tree: {LVAR:tree}, Order: {LVAR:order}
 {END_LOOP:forest}{END_UNLESS_LOOP:forest}
 <<
 out = <<
