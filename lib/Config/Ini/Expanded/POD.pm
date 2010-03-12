@@ -696,22 +696,22 @@ templates.  They take the following forms:
  {FILE:file_path}
 
  {INI:section:name}
- {IF_INI:section:name}.......{ELSE[_IF_INI:section:name]}...{END_IF_INI:section:name}
- {UNLESS_INI:section:name}...{ELSE[_UNLESS_INI:section:name]}...{END_UNLESS_INI:section:name}
+ {IF_INI:section:name}.......{ELSE[[_IF_INI]:section:name]}...{END_IF_INI:section:name}
+ {UNLESS_INI:section:name}...{ELSE[[_UNLESS_INI]:section:name]}...{END_UNLESS_INI:section:name}
  
  {INI:section:name:i}
- {IF_INI:section:name:i}.......{ELSE[_IF_INI:section:name:i]}...{END_IF_INI:section:name:i}
- {UNLESS_INI:section:name:i}...{ELSE[_UNLESS_INI:section:name:i]}...{END_UNLESS_INI:section:name:i}
+ {IF_INI:section:name:i}.......{ELSE[[_IF_INI]:section:name:i]}...{END_IF_INI:section:name:i}
+ {UNLESS_INI:section:name:i}...{ELSE[[_UNLESS_INI]:section:name:i]}...{END_UNLESS_INI:section:name:i}
  
  {VAR:varname}
- {IF_VAR:varname}.......{ELSE[_IF_VAR:varname]}...{END_IF_VAR:varname}
- {UNLESS_VAR:varname}...{ELSE[_UNLESS_VAR:varname]}...{END_UNLESS_VAR:varname}
+ {IF_VAR:varname}.......{ELSE[[_IF_VAR]:varname]}...{END_IF_VAR:varname}
+ {UNLESS_VAR:varname}...{ELSE[[_UNLESS_VAR]:varname]}...{END_UNLESS_VAR:varname}
  
  {LOOP:loopname}
  
      {LVAR:lvarname}
-     {IF_LVAR:lvarname}.......{ELSE[_IF_LVAR:lvarname]}...{END_IF_LVAR:lvarname}
-     {UNLESS_LVAR:lvarname}...{ELSE[_UNLESS_LVAR:lvarname]}...{END_UNLESS_LVAR:lvarname}
+     {IF_LVAR:lvarname}.......{ELSE[[_IF_LVAR]:lvarname]}...{END_IF_LVAR:lvarname}
+     {UNLESS_LVAR:lvarname}...{ELSE[[_UNLESS_LVAR]:lvarname]}...{END_UNLESS_LVAR:lvarname}
  
      {LOOP:[loopname:]nestedloop}
          {LVAR:[nestedloop:]nestedlvar}
@@ -721,28 +721,28 @@ templates.  They take the following forms:
      {LC:[loopname:]counter} (1 ... last index + 1)
  
      {LC:[loopname:]first}
-     {IF_LC:[loopname:]first}.......{ELSE[_IF_LC:[loopname:]first]}...{END_IF_LC:[loopname:]first}
-     {UNLESS_LC:[loopname:]first}...{ELSE[_UNLESS_LC:[loopname:]first]}...{END_UNLESS_LC:[loopname:]first}
+     {IF_LC:[loopname:]first}.......{ELSE[[_IF_LC][:loopname]:first]}...{END_IF_LC:[loopname:]first}
+     {UNLESS_LC:[loopname:]first}...{ELSE[[_UNLESS_LC][:loopname]:first]}...{END_UNLESS_LC:[loopname:]first}
  
      {LC:[loopname:]last}
-     {IF_LC:[loopname:]last}.......{ELSE[_IF_LC:...]}...{END_IF_LC:[loopname:]last}
-     {UNLESS_LC:[loopname:]last}...{ELSE[_UNLESS_LC:...]}...{END_UNLESS_LC:[loopname:]last}
+     {IF_LC:[loopname:]last}.......{ELSE[[_IF_LC]:...]}...{END_IF_LC:[loopname:]last}
+     {UNLESS_LC:[loopname:]last}...{ELSE[[_UNLESS_LC]:...]}...{END_UNLESS_LC:[loopname:]last}
  
      {LC:[loopname:]inner}
-     {IF_LC:[loopname:]inner}.......{ELSE[_IF_LC:...]}...{END_IF_LC:[loopname:]inner}
-     {UNLESS_LC:[loopname:]inner}...{ELSE[_UNLESS_LC:...]}...{END_UNLESS_LC:[loopname:]inner}
+     {IF_LC:[loopname:]inner}.......{ELSE[[_IF_LC]:...]}...{END_IF_LC:[loopname:]inner}
+     {UNLESS_LC:[loopname:]inner}...{ELSE[[_UNLESS_LC]:...]}...{END_UNLESS_LC:[loopname:]inner}
  
      {LC:[loopname:]odd}
-     {IF_LC:[loopname:]odd}.......{ELSE[_IF_LC:...]}...{END_IF_LC:[loopname:]odd}
-     {UNLESS_LC:[loopname:]odd}...{ELSE[_UNLESS_LC:...]}...{END_UNLESS_LC:[loopname:]odd}
+     {IF_LC:[loopname:]odd}.......{ELSE[[_IF_LC]:...]}...{END_IF_LC:[loopname:]odd}
+     {UNLESS_LC:[loopname:]odd}...{ELSE[[_UNLESS_LC]:...]}...{END_UNLESS_LC:[loopname:]odd}
  
      {LC:[loopname:]break(nn)} (e.g., break(2) == "even")
-     {IF_LC:[loopname:]break(nn)}.......{ELSE[_IF_LC:...]}...{END_IF_LC:[loopname:]break(nn)}
-     {UNLESS_LC:[loopname:]break(nn)}...{ELSE}[_UNLESS_LC:...]...{END_UNLESS_LC:[loopname:]break(nn)}
+     {IF_LC:[loopname:]break(nn)}.......{ELSE[[_IF_LC]:...]}...{END_IF_LC:[loopname:]break(nn)}
+     {UNLESS_LC:[loopname:]break(nn)}...{ELSE}[[_UNLESS_LC]:...]...{END_UNLESS_LC:[loopname:]break(nn)}
  
  {END_LOOP:loopname}
- {IF_LOOP:loopname}.......{ELSE[_IF_LOOP:loopname]}...{END_IF_LOOP:loopname}
- {UNLESS_LOOP:loopname}...{ELSE[_UNLESS_LOOP:loopname]}...{END_UNLESS_LOOP:loopname}
+ {IF_LOOP:loopname}.......{ELSE[[_IF_LOOP]:loopname]}...{END_IF_LOOP:loopname}
+ {UNLESS_LOOP:loopname}...{ELSE[[_UNLESS_LOOP]:loopname]}...{END_UNLESS_LOOP:loopname}
  
 Note that the C<'{END...}'> tags contain the full contents of the
 corresponding beginning tag.  By putting this onus on the user (i.e.,
@@ -766,6 +766,17 @@ for clarity, e.g.,
  {ELSE_IF_VAR:tree}No tree.
  {END_IF_VAR:tree}
 
+In addition, you can I<partially> qualify an ELSE with just a name, e.g.,
+
+ {IF_VAR:tree}
+     {IF_VAR:maple}{VAR:maple}
+     {ELSE:maple}{VAR:tree}
+     {END_IF_VAR:maple}
+ {ELSE:tree}No tree.
+ {END_IF_VAR:tree}
+
+So if C<'{ELSE_IF_VAR:maple'> looks confusingly like "elsif" logic
+is expected (it's not), then saying C<'{ELSE:maple}'> is an option.
 
 A note about C<'{LOOP...}'>, C<'{LVAR...}'>, C<'{IF_LOOP...}'>,
 C<'{UNLESS_LOOP...}'>, C<'{IF_LVAR...}'>, C<'{UNLESS_LVAR...}'>, and
@@ -852,10 +863,10 @@ You can provide an occurrence value (array subscript), e.g.,
 
 Includes:
 
- {IF_INI:section:name}...[{ELSE[_IF_INI:section:name]}...]{END_IF_INI:section:name}
- {IF_INI:section:name:i}...[{ELSE[_IF_INI:section:name:i]}...]{END_IF_INI:section:name:i}
- {UNLESS_INI:section:name}...[{ELSE[_UNLESS_INI:section:name]}...]{END_UNLESS_INI:section:name}
- {UNLESS_INI:section:name:i}...[{ELSE[_UNLESS_INI:section:name:i]}...]{END_UNLESS_INI:section:name:i}
+ {IF_INI:section:name}...[{ELSE[[_IF_INI]:section:name]}...]{END_IF_INI:section:name}
+ {IF_INI:section:name:i}...[{ELSE[[_IF_INI]:section:name:i]}...]{END_IF_INI:section:name:i}
+ {UNLESS_INI:section:name}...[{ELSE[[_UNLESS_INI]:section:name]}...]{END_UNLESS_INI:section:name}
+ {UNLESS_INI:section:name:i}...[{ELSE[[_UNLESS_INI]:section:name:i]}...]{END_UNLESS_INI:section:name:i}
 
 These templates provide for conditional text blocks based on the truth
 (or existence) of a named value in a section.  An optional C<'{ELSE}'>
@@ -863,10 +874,6 @@ divider supplies an alternative text block.
 
 Note that the C<'{END...}'> tags must contain the full contents of the
 beginning tag, including the section, name, and (if supplied) index.
-
-Note also that the C<'{ELSE}'> tags may also need to contain the full
-contents of the beginning tag if there are nested IF's and/or UNLESS's
-in between.
 
 =head3 {VAR:varname}
 
@@ -886,8 +893,8 @@ silently with a null string.
 
 Includes:
 
- {IF_VAR:varname}...[{ELSE[_IF_VAR:varname]}...]{END_IF_VAR:varname}
- {UNLESS_VAR:varname}...[{ELSE[_UNLESS_VAR:varname]}...]{END_UNLESS_VAR:varname}
+ {IF_VAR:varname}...[{ELSE[[_IF_VAR]:varname]}...]{END_IF_VAR:varname}
+ {UNLESS_VAR:varname}...[{ELSE[[_UNLESS_VAR]:varname]}...]{END_UNLESS_VAR:varname}
 
 These templates provide for conditional text blocks based on the truth
 (or existence) of a variable.  An optional C<'{ELSE}'> divider supplies
@@ -895,10 +902,6 @@ an alternative text block.
 
 Note that the C<'{END...}'> tags must contain the full contents of the
 beginning tag, including the variable name.
-
-Note also that the C<'{ELSE}'> tags may also need to contain the full
-contents of the beginning tag if there are nested IF's and/or UNLESS's
-in between.
 
 =head3 {LOOP:loopname}
 
@@ -1021,8 +1024,8 @@ in HTML::Template).
 
 Includes:
 
- {IF_LOOP:loopname}...[{ELSE[_IF_LOOP:loopname]}...]{END_IF_LOOP:loopname}
- {UNLESS_LOOP:loopname}...[{ELSE[_UNLESS_LOOP:loopname]}...]{END_UNLESS_LOOP:loopname}
+ {IF_LOOP:loopname}...[{ELSE[[_IF_LOOP]:loopname]}...]{END_IF_LOOP:loopname}
+ {UNLESS_LOOP:loopname}...[{ELSE[[_UNLESS_LOOP]:loopname]}...]{END_UNLESS_LOOP:loopname}
 
 These templates provide for conditional text blocks based on the
 existence of a loop.  An optional C<'{ELSE}'> divider supplies an
@@ -1030,10 +1033,6 @@ alternative text block.
 
 Note that the C<'{END...}'> tags must contain the full contents of the
 beginning tag, including the loop name.
-
-Note also that the C<'{ELSE}'> tags may also need to contain the full
-contents of the beginning tag if there are nested IF's and/or UNLESS's
-in between.
 
 =head3 {LVAR:lvarname}
 
@@ -1061,8 +1060,8 @@ are always set inside loops via set_loop().
 
 Includes:
 
- {IF_LVAR:lvarname}...[{ELSE[_IF_LVAR:lvarname]}...]{END_IF_LVAR:lvarname}
- {UNLESS_LVAR:lvarname}...[{ELSE[_UNLESS_LVAR:lvarname]}...]{END_UNLESS_LVAR:lvarname}
+ {IF_LVAR:lvarname}...[{ELSE[[_IF_LVAR]:lvarname]}...]{END_IF_LVAR:lvarname}
+ {UNLESS_LVAR:lvarname}...[{ELSE[[_UNLESS_LVAR]:lvarname]}...]{END_UNLESS_LVAR:lvarname}
 
 These templates provide for conditional text blocks based on the truth
 (or existence) of a value inside a loop.  An optional C<'{ELSE}'>
@@ -1070,10 +1069,6 @@ divider supplies an alternative text block.
 
 Note that the C<'{END...}'> tags must contain the full contents of the
 beginning tag, including the lvar name.
-
-Note also that the C<'{ELSE}'> tags may also need to contain the full
-contents of the beginning tag if there are nested IF's and/or UNLESS's
-in between.
 
 As with C<'{LVAR...}'>, these conditionals do not have reasonable
 meaning outside a loop.  That is, if used outside a loop, these will
@@ -1094,12 +1089,19 @@ addition, in this module, these values are available not only for the
 current loop, but also for parent loops (because the syntax includes
 the loop name).
 
+As mentioned above, the loopname portion of the tag is optional if the
+loop context is for the current loop (vs. a parent loop).
+
+Since this is usually the case, you'll usually leave off the loopname.
+But if you want to access the loop context of a parent loop, the
+loopname must be included.
+
 =head3 {LC:loopname:index} (0 ... last index)
 
 The current index of the loop (starting with 0).  This differs from
 C<'{LC:loopname:counter}'>, which starts with 1.
 
-=head3 {LC:loopname:counter} (1 ... last index + 1)
+=head3 {LC[:loopname]:counter} (1 ... last index + 1)
 
 The current counter (line number?) of the loop (starting with 1).  This
 differs from C<'{LC:loopname:index}'>, which starts with 0.
@@ -1108,9 +1110,9 @@ differs from C<'{LC:loopname:index}'>, which starts with 0.
 
 Includes:
 
- {LC:loopname:first}
- {IF_LC:loopname:first}.......{ELSE[_IF_LC:loopname:first]}...{END_IF_LC:loopname:first}
- {UNLESS_LC:loopname:first}...{ELSE[_UNLESS_LC:loopname:first]}...{END_UNLESS_LC:loopname:first}
+ {LC[:loopname]:first}
+ {IF_LC[:loopname]:first}.......{ELSE[[_IF_LC][:loopname]:first]}...{END_IF_LC[:loopname]:first}
+ {UNLESS_LC[:loopname]:first}...{ELSE[[_UNLESS_LC][:loopname]:first]}...{END_UNLESS_LC[:loopname]:first}
 
 The template C<'{LC:loopname:first}'> displays "1" (true) if the
 current iteration is the first one, "" (false) if not.  The IF and
@@ -1121,9 +1123,9 @@ boolean values.
 
 Includes:
 
- {LC:loopname:last}
- {IF_LC:loopname:last}.......{ELSE[_IF_LC:loopname:last]}...{END_IF_LC:loopname:last}
- {UNLESS_LC:loopname:last}...{ELSE[_UNLESS_LC:loopname:last]}...{END_UNLESS_LC:loopname:last}
+ {LC[:loopname]:last}
+ {IF_LC[:loopname]:last}.......{ELSE[[_IF_LC][:loopname]:last]}...{END_IF_LC[:loopname]:last}
+ {UNLESS_LC[:loopname]:last}...{ELSE[[_UNLESS_LC][:loopname]:last]}...{END_UNLESS_LC[:loopname]:last}
 
 The template C<'{LC:loopname:last}'> displays "1" (true) if the current
 iteration is the last one, "" (false) if not.  The IF and UNLESS
@@ -1134,9 +1136,9 @@ values.
 
 Includes:
 
- {LC:loopname:inner}
- {IF_LC:loopname:inner}.......{ELSE[_IF_LC:loopname:inner]}...{END_IF_LC:loopname:inner}
- {UNLESS_LC:loopname:inner}...{ELSE[_UNLESS_LC:loopname:inner]}...{END_UNLESS_LC:loopname:inner}
+ {LC[:loopname]:inner}
+ {IF_LC[:loopname]:inner}.......{ELSE[[_IF_LC][:loopname]:inner]}...{END_IF_LC[:loopname]:inner}
+ {UNLESS_LC[:loopname]:inner}...{ELSE[[_UNLESS_LC][:loopname]:inner]}...{END_UNLESS_LC[:loopname]:inner}
 
 The template C<'{LC:loopname:inner}'> displays "1" (true) if the
 current iteration is not the first one and is not the last one, ""
@@ -1147,9 +1149,9 @@ text blocks based on these boolean values.
 
 Includes:
 
- {LC:loopname:odd}
- {IF_LC:loopname:odd}.......{ELSE[_IF_LC:loopname:odd]}...{END_IF_LC:loopname:odd}
- {UNLESS_LC:loopname:odd}...{ELSE[_UNLESS_LC:loopname:odd]}...{END_UNLESS_LC:loopname:odd}
+ {LC[:loopname]:odd}
+ {IF_LC[:loopname]:odd}.......{ELSE[[_IF_LC][:loopname]:odd]}...{END_IF_LC[:loopname]:odd}
+ {UNLESS_LC[:loopname]:odd}...{ELSE[[_UNLESS_LC][:loopname]:odd]}...{END_UNLESS_LC[:loopname]:odd}
 
 The template C<'{LC:loopname:odd}'> displays "1" (true) if the current
 iteration is odd, "" (false) if not.  The IF and UNLESS templates
@@ -1159,9 +1161,9 @@ provide for conditional text blocks based on these boolean values.
 
 Includes:
 
- {LC:loopname:break(nn)} (e.g., break(2) == "even")
- {IF_LC:loopname:break(nn)}.......{ELSE[_IF_LC:loopname:break(nn)]}...{END_IF_LC:loopname:break(nn)}
- {UNLESS_LC:loopname:break(nn)}...{ELSE[_UNLESS_LC:loopname:break(nn)]}...{END_UNLESS_LC:loopname:break(nn)}
+ {LC[:loopname]:break(nn)} (e.g., break(2) == "even")
+ {IF_LC[:loopname]:break(nn)}.......{ELSE[[_IF_LC][:loopname]:break(nn)]}...{END_IF_LC[:loopname]:break(nn)}
+ {UNLESS_LC[:loopname]:break(nn)}...{ELSE[[_UNLESS_LC][:loopname]:break(nn)]}...{END_UNLESS_LC[:loopname]:break(nn)}
 
 The template C<'{LC:loopname:break(nn)}'> displays "1" (true) if the
 current iteration modulo the number 'nn' is true, "" (false) if not.
