@@ -2,7 +2,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Encode;
 
 BEGIN { use_ok('Config::Ini::Expanded') };
@@ -43,5 +43,11 @@ $Config::Ini::Expanded::encoding = 'iso-8859-1';
 my $ini_from_latin1 = Config::Ini::Expanded->new( string => $latin1_data );
 
 is( $ini_from_utf8->as_string(), $ini_from_latin1->as_string(), "as_string's equal" );
+
+# XXX can this be counted on?
+$Config::Ini::Expanded::encoding = '';
+my $ini_no_encoding = Config::Ini::Expanded->new( string => $latin1_data );
+
+is( $ini_from_latin1->as_string(), $ini_no_encoding->as_string(), "non-encoded as_string equal to latin1" );
 
 __END__

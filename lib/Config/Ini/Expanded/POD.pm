@@ -42,7 +42,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.09
+VERSION: 1.10
 
 =head1 DESCRIPTION
 
@@ -606,6 +606,9 @@ In the above example, the character encoding for the C<'string'>
 parameter value is assumed to be C<'iso-8859-1'> (rather than the
 default C<'utf8'>).  This encoding is then assumed for the
 C<'{FILE:stuff}'> operation and for C<'{INCLUDE:ini/more.ini}'>.
+
+Set this to a false value, e.g., C<''> or C<0> to keep the
+module from specifying any encoding.
 
 =head2 $Config::Ini::Expanded::filter
 

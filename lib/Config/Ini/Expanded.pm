@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.09
+VERSION: 1.10
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.09';
+our $VERSION = '1.10';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -192,11 +192,25 @@ sub init {
 
     unless( $fh ) {
         if( $string ) {
-            open $fh, "<:encoding($encoding)", \$string
-                or croak "Can't open string: $!"; }
+            if( $encoding ) {
+                open $fh, "<:encoding($encoding)", \$string
+                    or croak "Can't open string: $!";
+            }
+            else {
+                open $fh, "<", \$string
+                    or croak "Can't open string: $!";
+            }
+        }
         elsif( $file ) {
-            open $fh, "<:encoding($encoding)", $file
-                or croak "Can't open $file: $!"; }
+            if( $encoding ) {
+                open $fh, "<:encoding($encoding)", $file
+                    or croak "Can't open $file: $!";
+            }
+            else {
+                open $fh, "<", $file
+                    or croak "Can't open $file: $!";
+            }
+        }
         else { croak "Invalid parms" }
     }
 
@@ -1359,9 +1373,15 @@ sub _readfile {
             $file =~ m,\.\.,;
     $file =~ s'^/+'';
     $file = "$include_root/$file";
-    my $encoding = $self->encoding();
-    open my $fh, "<:encoding($encoding)", $file
-        or croak "Can't open $file: $!";
+    my $fh;
+    if( my $encoding = $self->encoding() ) {
+        open $fh, "<:encoding($encoding)", $file
+            or croak "Can't open $file: $!";
+    }
+    else {
+        open $fh, "<", $file
+            or croak "Can't open $file: $!";
+    }
     local $/;
     return <$fh>;
 }
