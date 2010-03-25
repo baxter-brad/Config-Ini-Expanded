@@ -595,7 +595,10 @@ This value is the character encoding expected for the ini data.
 It applies in new()/init() (which includes C<'{INCLUDE:file_path}'>)
 and C<'{FILE:file_path}'>.
 
- $Config::Ini::Expanded::encoding = 'iso-8859-1';
+(The default value is false, which will not specify an encoding,
+relying on perl's default behavior.)
+
+ $Config::Ini::Expanded::encoding = 'utf8';
  my $ini = $Config::Ini::Expanded->new( string => <<'__' );
  [section]
  name = "{FILE:stuff}"
@@ -603,12 +606,13 @@ and C<'{FILE:file_path}'>.
  __
 
 In the above example, the character encoding for the C<'string'>
-parameter value is assumed to be C<'iso-8859-1'> (rather than the
-default C<'utf8'>).  This encoding is then assumed for the
-C<'{FILE:stuff}'> operation and for C<'{INCLUDE:ini/more.ini}'>.
+parameter value is assumed to be C<'utf8'>.  This encoding is
+then assumed for the C<'{FILE:stuff}'> operation and for
+C<'{INCLUDE:ini/more.ini}'>.
 
 Set this to a false value, e.g., C<''> or C<0> to keep the
-module from specifying any encoding.
+module from specifying any encoding, i.e., to assume the default
+behavior.
 
 =head2 $Config::Ini::Expanded::filter
 
@@ -1276,12 +1280,12 @@ Also see GLOBAL SETTINGS above.
 If you do not pass any parameters to C<new()>, you can later call
 C<init()> with the same parameters described above.
 
-By default, if you give a filename or string, the module will open it
-using ":encoding(utf8)".  You can change this by setting
-$Config::Ini::Expanded::encoding, e.g.,
+By default, if you give a filename or string, the module will not
+specify any encoding, and thus will rely on perl's default behavior.
+You can change this by setting $Config::Ini::encoding, e.g.,
 
- $Config::Ini::Expanded::encoding = "iso-8859-1";
- my $ini = Config::Ini::Expanded->new( file => 'filename' );
+ $Config::Ini::encoding = "utf8";
+ my $ini = Config::Ini->new( file => 'filename' );
 
 Alternatively, you may open the file yourself using the desired
 encoding and send the filehandle to new() (or init());

@@ -66,21 +66,21 @@ $JSON::Pretty  = 1;
 $JSON::BareKey = 1;  # *accepts* bare keys
 $JSON::KeySort = 1;
 
-our $encoding      = 'utf8';  # for new()/init(), {FILE:...}
-our $keep_comments = 0;       # boolean, user may set to 1
-our $heredoc_style = '<<';    # for as_string()
-our $interpolates  = 1;       # double-quote interpolations
-our $expands       = 0;       # double-quote expansions
-our $include_root  = '';      # for INCLUDE/FILE expansions
-our $inherits      = '';      # for inheriting from other configs
-our $no_inherit    = '';      # '' means will inherit anything
-our $no_override   = '';      # '' means can override anything
-our $filter;                  # for template placeholders
-our $callbacks;               # for escape_html(), etc.
-our $loop_limit    = 10;      # limits for detecting loops
+our $encoding      = '';    # for new()/init(), {FILE:...}
+our $keep_comments = 0;     # boolean, user may set to 1
+our $heredoc_style = '<<';  # for as_string()
+our $interpolates  = 1;     # double-quote interpolations
+our $expands       = 0;     # double-quote expansions
+our $include_root  = '';    # for INCLUDE/FILE expansions
+our $inherits      = '';    # for inheriting from other configs
+our $no_inherit    = '';    # '' means will inherit anything
+our $no_override   = '';    # '' means can override anything
+our $filter;                # for template placeholders
+our $callbacks;             # for escape_html(), etc.
+our $loop_limit    = 10;    # limits for detecting loops
 our $size_limit    = 1_000_000;
 
-my $Var_rx = qr/[^:}\s]+/;    # ... in {VAR:...}, {FILE:...}, etc.
+my $Var_rx = qr/[^:}\s]+/;  # ... in {VAR:...}, {FILE:...}, etc.
 
 use constant SECTIONS => 0;
 use constant SHASH    => 1;

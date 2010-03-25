@@ -2,6 +2,7 @@ Revision history for Perl extension Config::Ini::Expanded.
 
 1.10 Fri Mar 19 12:05:24 EDT 2010
     - allow encoding to be false
+    - make encoding default to false (Thu Mar 25 11:33:30 EDT 2010)
 
 1.09 Thu Mar 11 12:23:14 EST 2010
     - added {ELSE:name} syntax for partially qualifying an {ELSE}

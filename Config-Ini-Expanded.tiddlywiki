@@ -510,8 +510,10 @@ In the above example, the value of {{{$ini->get(section=>'name')}}} would be the
 !!$Config::Ini::Expanded::encoding
 This value is the character encoding expected for the ini data. It applies in new()/init() (which includes {{{'{INCLUDE:file_path}'}}}) and {{{'{FILE:file_path}'}}}.
 
+(The default value is false, which will not specify an encoding, relying on perl's default behavior.)
+
 {{{
- $Config::Ini::Expanded::encoding = 'iso-8859-1';
+ $Config::Ini::Expanded::encoding = 'utf8';
  my $ini = $Config::Ini::Expanded->new( string => <<'__' );
  [section]
  name = "{FILE:stuff}"
@@ -519,9 +521,9 @@ This value is the character encoding expected for the ini data. It applies in ne
  __
 }}}
 
-In the above example, the character encoding for the {{{'string'}}} parameter value is assumed to be {{{'iso-8859-1'}}} (rather than the default {{{'utf8'}}}). This encoding is then assumed for the {{{'{FILE:stuff}'}}} operation and for {{{'{INCLUDE:ini/more.ini}'}}}.
+In the above example, the character encoding for the {{{'string'}}} parameter value is assumed to be {{{'utf8'}}}. This encoding is then assumed for the {{{'{FILE:stuff}'}}} operation and for {{{'{INCLUDE:ini/more.ini}'}}}.
 
-Set this to a false value, e.g., {{{''}}} or {{{0}}} to keep the module from specifying any encoding.
+Set this to a false value, e.g., {{{''}}} or {{{0}}} to keep the module from specifying any encoding, i.e., to assume the default behavior.
 
 !!$Config::Ini::Expanded::filter
 This value is a subroutine reference. This subroutine will filter the data prior to expanding or interpolating it. This is intended to allow you to use different syntax for template placeholders. The subroutine expects to get a scalar reference and will update that scalar. For example, if you don't like how this looks:
@@ -1061,11 +1063,11 @@ Also see GLOBAL SETTINGS above.
 
 If you do not pass any parameters to {{{new()}}}, you can later call {{{init()}}} with the same parameters described above.
 
-By default, if you give a filename or string, the module will open it using ":encoding(utf8)". You can change this by setting $Config::Ini::Expanded::encoding, e.g.,
+By default, if you give a filename or string, the module will not specify any encoding, and thus will rely on perl's default behavior. You can change this by setting $Config::Ini::encoding, e.g.,
 
 {{{
- $Config::Ini::Expanded::encoding = "iso-8859-1";
- my $ini = Config::Ini::Expanded->new( file => 'filename' );
+ $Config::Ini::encoding = "utf8";
+ my $ini = Config::Ini->new( file => 'filename' );
 }}}
 
 Alternatively, you may open the file yourself using the desired encoding and send the filehandle to new() (or init());
