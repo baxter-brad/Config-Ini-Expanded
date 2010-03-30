@@ -22,7 +22,7 @@ Config::Ini::Expanded - Ini configuration file reading/writing with template exp
 }}}
 
 !VERSION
-VERSION: 1.10
+VERSION: 1.11
 
 !DESCRIPTION
 This is an Ini configuration file processor. This class inherits from Config::Ini::Edit (and Config::Ini). It uses those modules as well as Config::Ini::Quote, Text::~ParseWords and JSON;
@@ -1412,6 +1412,20 @@ This value will be substituted into any expansion templates of the form, {{{'{LO
 
 {{{
  $ini->set_loop( 'months', [{1=>'jan'},{2=>'feb'},...,{12=>'dec'}] );
+}}}
+
+The following will remove a loop:
+
+{{{
+ $ini->set_loop( 'months' );
+ $ini->set_loop( 'months' => undef );
+ $ini->set_loop( { 'months' => undef } );
+}}}
+
+The following will remove all loops:
+
+{{{
+ $ini->set_loop( undef );
 }}}
 
 !!!get_loop( $loopname )

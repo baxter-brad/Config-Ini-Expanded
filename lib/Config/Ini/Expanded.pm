@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.10
+VERSION: 1.11
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.10';
+our $VERSION = '1.11';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -661,6 +661,31 @@ sub get_loop {
 
 #---------------------------------------------------------------------
 ## $ini->set_loop( $loop, $value, ... )
+#
+# [1]: the following removes all loops set in the object
+#
+#      $ini->set_loop( undef );
+#
+# [2]: If the lname loop is set, the following removes it.  If the
+#      lname loop isn't set, the following are all ignored -- i.e.
+#      nothing is set and no errors occur.
+#
+#      [2.1] $ini->set_loop( { lname => undef } );
+#      [2.2] $ini->set_loop(   lname => undef   );
+#      [2.3] $ini->set_loop(   lname            );
+#
+# [3]: If the lname2 loop is set, the following removes it.  If the
+#      lname2 loop isn't set, then the lname2 setting is ignored,
+#      i.e., lname2 is not set and no errors occur.
+#
+#      [3.1] $ini->set_loop( { lname1 => 'val', lname2 => undef } );
+#      [3.2] $ini->set_loop(   lname1 => 'val', lname2 => undef   );
+#
+# [4]: The following is an error
+#
+#      $ini->set_loop( lname1 => 'val', lname2 );
+#
+
 sub set_loop {
     my ( $self, @loops ) = @_;
 
@@ -668,23 +693,51 @@ sub set_loop {
 
     if( @loops == 1 ) {
         if( not defined $loops[0] ) {
-            delete $self->[LOOP];
+            delete $self->[LOOP];  # [1]
         }
         elsif( ref $loops[0] eq 'HASH' ) {
             my $href = $loops[0];
-            $self->[LOOP]{ $_ } = $href->{ $_ } for keys %$href;
+            while( my( $key, $val ) = each %$href ) {
+                if( defined $val ) {
+                    if( ref $val and @$val ) {
+                        $self->[LOOP]{ $key } = $val;
+                    }
+                    else {
+                        croak "set_loop(): '$key' is not a loop.";
+                    }
+                }
+                else {
+                    delete $self->[LOOP]{ $key }
+                        if exists $self->[LOOP]{ $key };  # [2.1] [3.1]
+                }
+            }
         }
         else {
-            croak "set_loop(): Odd number of parms.";
+            for( $loops[0] ) {
+                delete $self->[LOOP]{ $_ }
+                    if exists $self->[LOOP]{ $_ };  # [2.3]
+            }
         }
         return;
     }
 
-    croak "set_loop(): Odd number of parms." if @loops % 2;
+    croak "set_loop(): Odd number of parms." if @loops % 2;  # [4]
 
     while( @loops ) {
         my $key = shift @loops;
-        $self->[LOOP]{$key} = shift @loops;
+        my $val = shift @loops;
+        if( defined $val ) {
+            if( ref $val and @$val ) {
+                $self->[LOOP]{ $key } = $val;
+            }
+            else {
+                croak "set_loop(): '$key' is not a loop.";
+            }
+        }
+        else {
+            delete $self->[LOOP]{ $key }
+                if exists $self->[LOOP]{ $key };  # [2.2], [3.2]
+        }
     }
 }
 

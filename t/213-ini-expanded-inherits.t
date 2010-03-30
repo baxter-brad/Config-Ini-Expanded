@@ -21,9 +21,9 @@ $ini1->set_var(
     );
 
 $ini1->set_loop(
-    loop1 => 'loop1(ini1)',
-    loop2 => 'loop2(ini1)',
-    loop3 => 'loop3(ini1)',
+    loop1 => [{lvar=>'loop1(ini1)'}],
+    loop2 => [{lvar=>'loop2(ini1)'}],
+    loop3 => [{lvar=>'loop3(ini1)'}],
     );
 
 # set up ini2 to inherit from ini1
@@ -39,7 +39,7 @@ $ini2->set_var(
     );
 
 $ini2->set_loop(
-    loop2 => 'loop2(ini2)',
+    loop2 => [{lvar=>'loop2(ini2)'}],
     );
 
 # set up ini3 to inherit from ini2 (and so also from ini1)
@@ -55,7 +55,7 @@ $ini3->set_var(
     );
 
 $ini3->set_loop(
-    loop3 => 'loop3(ini3)',
+    loop3 => [{lvar=>'loop3(ini3)'}],
     );
 
 # set up ini4 to inherit from ini2 and ini1
@@ -72,7 +72,7 @@ $ini4->set_var(
     );
 
 $ini4->set_loop(
-    loop4 => 'loop4(ini4)',
+    loop4 => [{lvar=>'loop4(ini4)'}],
     );
 
 # set up ini5 to inherit from all the others
@@ -95,15 +95,15 @@ is( $ini1->get( xyz=>'abc' ),       undef,          'get()      ('.__LINE__.')' 
 is( $ini1->get( section=>'abc' ),   undef,          'get()      ('.__LINE__.')' );
 is( $ini1->get( section=>'name1' ), 'value1(ini1)', 'get()      ('.__LINE__.')' );
 is( $ini1->get_var( 'var1' ),       'var1(ini1)',   'get_var()  ('.__LINE__.')' );
-is( $ini1->get_loop( 'loop1' ),     'loop1(ini1)',  'get_loop() ('.__LINE__.')' );
+is( ${$ini1->get_loop( 'loop1' )}[0]{'lvar'},     'loop1(ini1)',  'get_loop() ('.__LINE__.')' );
 is( $ini2->get( xyz=>'abc' ),       undef,          'get()      ('.__LINE__.')' );
 is( $ini2->get( section=>'abc' ),   undef,          'get()      ('.__LINE__.')' );
 is( $ini2->get( section=>'name1' ), 'value1(ini1)', 'get()      ('.__LINE__.')' );
 is( $ini2->get( section=>'name2' ), 'value2(ini2)', 'get()      ('.__LINE__.')' );
 is( $ini2->get_var( 'var1' ),       'var1(ini1)',   'get_var()  ('.__LINE__.')' );
 is( $ini2->get_var( 'var2' ),       'var2(ini2)',   'get_var()  ('.__LINE__.')' );
-is( $ini2->get_loop( 'loop1' ),     'loop1(ini1)',  'get_loop() ('.__LINE__.')' );
-is( $ini2->get_loop( 'loop2' ),     'loop2(ini2)',  'get_loop() ('.__LINE__.')' );
+is( ${$ini2->get_loop( 'loop1' )}[0]{'lvar'},     'loop1(ini1)',  'get_loop() ('.__LINE__.')' );
+is( ${$ini2->get_loop( 'loop2' )}[0]{'lvar'},     'loop2(ini2)',  'get_loop() ('.__LINE__.')' );
 is( $ini3->get( xyz=>'abc' ),       undef,          'get()      ('.__LINE__.')' );
 is( $ini3->get( section=>'abc' ),   undef,          'get()      ('.__LINE__.')' );
 is( $ini3->get( section=>'name1' ), 'value1(ini1)', 'get()      ('.__LINE__.')' );
@@ -112,9 +112,9 @@ is( $ini3->get( section=>'name3' ), 'value3(ini3)', 'get()      ('.__LINE__.')' 
 is( $ini3->get_var( 'var1' ),       'var1(ini1)',   'get_var()  ('.__LINE__.')' );
 is( $ini3->get_var( 'var2' ),       'var2(ini2)',   'get_var()  ('.__LINE__.')' );
 is( $ini3->get_var( 'var3' ),       'var3(ini3)',   'get_var()  ('.__LINE__.')' );
-is( $ini3->get_loop( 'loop1' ),     'loop1(ini1)',  'get_loop() ('.__LINE__.')' );
-is( $ini3->get_loop( 'loop2' ),     'loop2(ini2)',  'get_loop() ('.__LINE__.')' );
-is( $ini3->get_loop( 'loop3' ),     'loop3(ini3)',  'get_loop() ('.__LINE__.')' );
+is( ${$ini3->get_loop( 'loop1' )}[0]{'lvar'},     'loop1(ini1)',  'get_loop() ('.__LINE__.')' );
+is( ${$ini3->get_loop( 'loop2' )}[0]{'lvar'},     'loop2(ini2)',  'get_loop() ('.__LINE__.')' );
+is( ${$ini3->get_loop( 'loop3' )}[0]{'lvar'},     'loop3(ini3)',  'get_loop() ('.__LINE__.')' );
 is( $ini3->get( xyz=>'abc' ),       undef,          'get()      ('.__LINE__.')' );
 is( $ini3->get( section=>'abc' ),   undef,          'get()      ('.__LINE__.')' );
 is( $ini4->get( section=>'name1' ), 'value1(ini1)', 'get()      ('.__LINE__.')' );
@@ -123,9 +123,9 @@ is( $ini4->get( section=>'name3' ), 'value3(ini1)', 'get()      ('.__LINE__.')' 
 is( $ini4->get_var( 'var1' ),       'var1(ini1)',   'get_var()  ('.__LINE__.')' );
 is( $ini4->get_var( 'var2' ),       'var2(ini2)',   'get_var()  ('.__LINE__.')' );
 is( $ini4->get_var( 'var3' ),       'var3(ini1)',   'get_var()  ('.__LINE__.')' );
-is( $ini4->get_loop( 'loop1' ),     'loop1(ini1)',  'get_loop() ('.__LINE__.')' );
-is( $ini4->get_loop( 'loop2' ),     'loop2(ini2)',  'get_loop() ('.__LINE__.')' );
-is( $ini4->get_loop( 'loop3' ),     'loop3(ini1)',  'get_loop() ('.__LINE__.')' );
+is( ${$ini4->get_loop( 'loop1' )}[0]{'lvar'},     'loop1(ini1)',  'get_loop() ('.__LINE__.')' );
+is( ${$ini4->get_loop( 'loop2' )}[0]{'lvar'},     'loop2(ini2)',  'get_loop() ('.__LINE__.')' );
+is( ${$ini4->get_loop( 'loop3' )}[0]{'lvar'},     'loop3(ini1)',  'get_loop() ('.__LINE__.')' );
 is( $ini5->get( section=>'name1' ),
     'value1(ini1):value2(ini2):value3(ini1):value4(ini4)',
     'get() (interpolated) ('.__LINE__.')' );

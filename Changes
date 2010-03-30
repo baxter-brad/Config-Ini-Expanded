@@ -1,5 +1,9 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.11 Tue Mar 30 13:52:23 EDT 2010
+    - change set_loop to accept undefined/empty loops
+    - added tests to t/212-ini-expanded-accessors.t
+
 1.10 Fri Mar 19 12:05:24 EDT 2010
     - allow encoding to be false
     - make encoding default to false (Thu Mar 25 11:33:30 EDT 2010)

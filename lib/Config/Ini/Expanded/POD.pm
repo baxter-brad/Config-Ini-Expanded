@@ -42,7 +42,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.10
+VERSION: 1.11
 
 =head1 DESCRIPTION
 
@@ -1622,6 +1622,16 @@ This value will be substituted into any expansion templates of the
 form, C<'{LOOP:loopname}...{END_LOOP:loopname}'>.
 
  $ini->set_loop( 'months', [{1=>'jan'},{2=>'feb'},...,{12=>'dec'}] );
+
+The following will remove a loop:
+
+ $ini->set_loop( 'months' );
+ $ini->set_loop( 'months' => undef );
+ $ini->set_loop( { 'months' => undef } );
+
+The following will remove all loops:
+
+ $ini->set_loop( undef );
 
 =head3 get_loop( $loopname )
 
