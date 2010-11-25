@@ -699,12 +699,9 @@ sub set_loop {
             my $href = $loops[0];
             while( my( $key, $val ) = each %$href ) {
                 if( defined $val ) {
-                    if( ref $val and @$val ) {
-                        $self->[LOOP]{ $key } = $val;
-                    }
-                    else {
-                        croak "set_loop(): '$key' is not a loop.";
-                    }
+                    croak "set_loop(): '$key' is not a loop."
+                        unless ref $val;
+                    $self->[LOOP]{ $key } = $val if @$val;
                 }
                 else {
                     delete $self->[LOOP]{ $key }
@@ -727,12 +724,9 @@ sub set_loop {
         my $key = shift @loops;
         my $val = shift @loops;
         if( defined $val ) {
-            if( ref $val and @$val ) {
-                $self->[LOOP]{ $key } = $val;
-            }
-            else {
-                croak "set_loop(): '$key' is not a loop.";
-            }
+            croak "set_loop(): '$key' is not a loop."
+                unless ref $val;
+            $self->[LOOP]{ $key } = $val if @$val;
         }
         else {
             delete $self->[LOOP]{ $key }
