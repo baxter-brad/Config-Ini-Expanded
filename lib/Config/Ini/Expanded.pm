@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.11
+VERSION: 1.12
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.11';
+our $VERSION = '1.12';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -165,7 +165,7 @@ sub init {
     $file     = $parms{'file'};
     $fh       = $parms{'fh'};
     $string   = $parms{'string'};
-    $included = $parms{'included'};
+    $included = $parms{'included'}||$self->included();
 
     # see AUTOLOAD() for (almost) parallel list of attributes
     for( qw(
@@ -220,10 +220,11 @@ sub init {
     my %vattr;
     my $comment;
     my $pending_comments = '';
-    my %i;
+    my %i;  # per-value array indexes for value attributes
     my $resingle = qr/' (?:  '' | [^'] )* '/x;
     my $redouble = qr/" (?: \\" | [^"] )* "/x;
     my $requoted = qr/ $resingle|$redouble /xo;
+    my $jit;  # just-in-time includes
 
     local *_;
     while( <$fh> ) {
@@ -310,7 +311,10 @@ sub init {
                 last         if $found_end;
                 chomp $value if $join;
 
-                # XXX need to explain this:
+                # we want to save an indentation value.
+                # by convention, we'll save the first
+                # string of white space we see here
+
                 if( $indented ) {
                     if( s/^ (\s+) //x ) {
                         $indented = $1 if $indented !~ /^\s+$/;
@@ -319,7 +323,7 @@ sub init {
 
                 $value .= $_;
 
-            }  # while
+            }  # while (heredoc loop)
 
             croak "Didn't find heredoc end tag ($heretag) " .
                 "for $section:$name" unless $found_end;
@@ -376,6 +380,24 @@ sub init {
                         $ini->get( $section, $name ) );
                 }
             }
+            next;
+        }
+
+        # {JIT:file}
+        elsif( /^ \s* { JIT: ( [^:{}]+ ) } /x ) {
+            my $file = $1;
+
+            # checks for security
+            croak "JIT not allowed."
+                if !$include_root                or  # no include root
+                    $include_root =~ m'^ /+ $'x  or  # is root? '/'
+                    $file         =~ m' \.\. 'x;     # file contains '..'
+
+            $file =~ s'^ /+ ''x;             # remove leading slash
+            $file = "$include_root/$file";   # put it back
+
+            push @{$jit->{ $section }}, $file;
+
             next;
         }
 
@@ -488,12 +510,14 @@ sub init {
 
         $i{ $section }{ $name }++;
 
-    }  # while
+    }  # while (file loop)
 
     if( $pending_comments ) {
         $self->set_section_comments( '__END__', $pending_comments );
     }
 
+    $self->included( $included ) if $included;
+    $self->jit( $jit )           if $jit;
 }
 
 #---------------------------------------------------------------------
@@ -531,6 +555,51 @@ sub get {
         exists $self->[SHASH]{ $section } and
         exists $self->[SHASH]{ $section }[NHASH]{ $name } ) {
 
+        # JIT includes here
+
+        if( my $jit = $self->jit() ) {
+
+            return unless $jit->{ $section }
+                   and  @{$jit->{ $section }};
+
+            my $included     = $self->included();
+            my $include_root = $self->include_root();
+
+            # merge include files until we get the value we
+            # want or run out of files
+
+            while( my $file = pop @{$jit->{ $section }} ) {
+                next if $included->{ $file }++;
+
+                my $ini = Config::Ini::Expanded->new(
+                    include_root => $include_root,
+                    file         => $file,
+                    included     => $included );
+
+                # merge that one into this one
+                # note: we're not keeping comments, attributes,
+                #       etc. from the included file
+                # also, this should prompt JIT includes in the
+                # included file, but won't add any to this object
+
+                for my $sect ( $ini->get_sections() ) {
+                    for my $nme ( $ini->get_names( $sect ) ) {
+                        $self->add( $sect, $nme,
+                            $ini->get( $sect, $nme ) );
+                    }
+                }
+
+                if( wantarray ) {
+                    my @try = $self->get( $section, $name, $i );  # recurse
+                    return @try if @try;
+                }
+                else {
+                    my $try = $self->get( $section, $name, $i );  # recurse
+                    return $try if defined $try;
+                }
+            }
+        }
+
         return unless $self->inherits();
 
         # check for prohibitions
@@ -550,7 +619,7 @@ sub get {
             }
         }
 
-        return;  # i.e., not found in parents
+        return;  # i.e., not found in parents or jit includes
     }
 
     my $aref = $self->[SHASH]{ $section }[NHASH]{ $name }[VALS];
@@ -1436,19 +1505,21 @@ sub _readfile {
 #---------------------------------------------------------------------
 ## AUTOLOAD() (wrapper for _attr())
 ## file( $filename )
+## include_root( $include_root )
+## encoding( 'utf8' )
 ## interpolates( 1 )
 ## expands( 1 )
 ## inherits( [$ini_obj1,$ini_obj2,...] )
 ## no_inherit(  { section1=>{name1=>1,name2=>1}, s2=>{n3=>1}, ... } )
 ## no_override( { section1=>{name1=>1,name2=>1}, s2=>{n3=>1}, ... } )
-## include_root( $include_root )
 ## keep_comments( 0 )
 ## heredoc_style( '<<' )
 ## loop_limit( 10 )
 ## size_limit( 1_000_000 )
-## encoding( 'utf8' )
 ## filter( \&filter_sub )
 ## callbacks( { abc => \&abc, xyz => \&xyz, ... } ), i.e., hash of subs
+## included( { file1 => 1, file2 => 1, ... } )
+## jit( { sect1 => [file1,file2,...], sect2 => [file3,...], ... } )
 our $AUTOLOAD;
 sub AUTOLOAD {
     my $attribute = $AUTOLOAD;
@@ -1456,10 +1527,13 @@ sub AUTOLOAD {
 
     # see init() for (almost) parallel list of attributes
     die "Undefined: $attribute()" unless $attribute =~ /^(?:
-        file | interpolates | expands |
+        file | include_root | encoding |
+        interpolates | expands |
         inherits | no_inherit | no_override |
-        include_root | keep_comments | heredoc_style |
-        loop_limit | size_limit | encoding | filter | callbacks
+        keep_comments | heredoc_style |
+        loop_limit | size_limit |
+        filter | callbacks |
+        included | jit
         )$/x;
 
     my $self = shift;

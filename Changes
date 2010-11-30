@@ -1,5 +1,8 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.12 Mon Nov 29 20:48:09 EST 2010
+    - add {JIT:...} template for Just-In-Time includes
+
 1.11 Tue Mar 30 13:52:23 EDT 2010
     - change set_loop to accept undefined/empty loops
     - added tests to t/212-ini-expanded-accessors.t

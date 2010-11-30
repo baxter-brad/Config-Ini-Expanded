@@ -42,7 +42,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.11
+VERSION: 1.12
 
 =head1 DESCRIPTION
 
@@ -574,8 +574,9 @@ need to allow for larger values.
 
 =head2 $Config::Ini::Expanded::include_root
 
-This value is the path were C<'{INCLUDE:file_path}'> and
-C<'{FILE:file_path}'> will look when file contents are read in.
+This value is the path were C<'{INCLUDE:file_path}'>,
+C<'{JIT:file_path}'>, and C<'{FILE:file_path}'> templates will look
+when file contents are read in.
 
  $Config::Ini::Expanded::include_root = '/web/data';
  my $ini = $Config::Ini::Expanded->new( string => <<'__' );
@@ -830,6 +831,68 @@ Note that this template is never expanded inside double-quoted values
 or during calls to C<get_expanded()> or C<get_interpolated()>.  It is a
 section-level template, not a value-level template.  See
 C<'{FILE:file_path}'> below for value-level file inclusions.
+
+=head3 {JIT:ini_file_path}
+
+The C<'{JIT:ini_file_path}'> (Just-In-Time include) template is
+similar to the C<'{INCLUDE:...}'> template in that it is a
+section-level template, not a value-level one.  It is different in
+that it isn't expanded during C<init()>.
+
+Instead, as the Ini file is read in, the JIT template information is
+saved, and it is associated with the section where the template
+appears.
+
+Later, if a value is requested from that section, and that value is
+not defined -- and if there is a JIT template for that section --
+I<then> the Ini named in the template is read in and merged with the
+current instance.  If after this merging, the requested value is
+defined, it is returned.
+
+    [section]
+    name = value
+    
+    {JIT:second.ini}
+    
+    [another_section]
+    name = value
+
+Like C<'{INCLUDE:...}'>, the included Ini file will be loaded into
+the object as if its contents existed in the main Ini file where the
+template appears.  It croaks if the file cannot be opened.  It also
+croaks if C<< $self->include_root() >> is not set (or is set to
+C<'/'>), or if C<'ini_file_path'> contains two dots C<'..'>.
+
+This Just-In-Time concept lets you postpone loading Ini settings
+that may never be used.  The JIT includes only happen when a value
+in a section is requested that isn't defined.  But note that even
+though the inclusion is triggered by a request for a particular
+section, the included Ini file may
+I<contain settings for any number of sections>.
+And in fact, the value requested might not ever be defined.
+
+This means that one could set up special sections designed just to
+trigger these includes, e.g.,
+
+    [jit1]
+    {JIT:include1.ini}
+    [jit2]
+    {JIT:include2.ini}
+
+The program could then call C<< get( jit1 => 'dummy' ) >> to read in
+the C<include1.ini> file (which might not define 'dummy' anywhere),
+and similarly, call C<< get( jit2 => 'dummy' ) >> to read in
+C<include2.ini>.  These included files may then define anything you
+want, including more JIT includes.
+
+Finally, a section may define multiple JIT includes.  When a value
+is requested that isn't defined, each JIT include file is included
+until the requested value is found.  Any JIT includes that didn't get
+included in that round may still be included later.
+
+As with C<'{INCLUDE:...}'> a particular file will only be included
+once, regardless of how many times it is given in an INCLUDE or JIT
+template.
 
 =head3 {FILE:file_path}
 
