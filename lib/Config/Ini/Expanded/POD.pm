@@ -42,7 +42,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.12
+VERSION: 1.13
 
 =head1 DESCRIPTION
 
@@ -2135,7 +2135,7 @@ Brad Baxter, E<lt>bmb@mail.libs.uga.eduE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2010 by Brad Baxter
+Copyright (C) 2011 by Brad Baxter
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.7 or,

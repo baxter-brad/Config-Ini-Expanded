@@ -1,5 +1,8 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.13 Wed Feb  2 15:52:36 EST 2011
+    - changed .+ to [^=:]+ for parsing name=value; fixed heredoc bug
+
 1.12 Mon Nov 29 20:48:09 EST 2010
     - add {JIT:...} template for Just-In-Time includes
 

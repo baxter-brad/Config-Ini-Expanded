@@ -22,7 +22,7 @@ Config::Ini::Expanded - Ini configuration file reading/writing with template exp
 }}}
 
 !VERSION
-VERSION: 1.11
+VERSION: 1.13
 
 !DESCRIPTION
 This is an Ini configuration file processor. This class inherits from Config::Ini::Edit (and Config::Ini). It uses those modules as well as Config::Ini::Quote, Text::~ParseWords and JSON;
@@ -494,7 +494,7 @@ During an expansion like described above, the value being expanded may grow long
 The default {{{'size_limit'}}} is 1_000_000. Increase this limit if you need to allow for larger values.
 
 !!$Config::Ini::Expanded::include_root
-This value is the path were {{{'{INCLUDE:file_path}'}}} and {{{'{FILE:file_path}'}}} will look when file contents are read in.
+This value is the path were {{{'{INCLUDE:file_path}'}}}, {{{'{JIT:file_path}'}}}, and {{{'{FILE:file_path}'}}} templates will look when file contents are read in.
 
 {{{
  $Config::Ini::Expanded::include_root = '/web/data';
@@ -707,6 +707,42 @@ The {{{'{INCLUDE:ini_file_path}'}}} template is expanded during {{{init()}}} as 
 The included Ini file will be loaded into the object as if its contents existed in the main Ini file where the template appears. It croaks if the file cannot be opened. It also croaks if {{{$self->include_root()}}} is not set (or is set to {{{'/'}}}), or if {{{'ini_file_path'}}} contains two dots {{{'..'}}}.
 
 Note that this template is never expanded inside double-quoted values or during calls to {{{get_expanded()}}} or {{{get_interpolated()}}}. It is a section-level template, not a value-level template. See {{{'{FILE:file_path}'}}} below for value-level file inclusions.
+
+!!!{JIT:ini_file_path}
+The {{{'{JIT:ini_file_path}'}}} (Just-In-Time include) template is similar to the {{{'{INCLUDE:...}'}}} template in that it is a section-level template, not a value-level one. It is different in that it isn't expanded during {{{init()}}}.
+
+Instead, as the Ini file is read in, the JIT template information is saved, and it is associated with the section where the template appears.
+
+Later, if a value is requested from that section, and that value is not defined -- and if there is a JIT template for that section -- //then// the Ini named in the template is read in and merged with the current instance. If after this merging, the requested value is defined, it is returned.
+
+{{{
+    [section]
+    name = value
+    
+    {JIT:second.ini}
+    
+    [another_section]
+    name = value
+}}}
+
+Like {{{'{INCLUDE:...}'}}}, the included Ini file will be loaded into the object as if its contents existed in the main Ini file where the template appears. It croaks if the file cannot be opened. It also croaks if {{{$self->include_root()}}} is not set (or is set to {{{'/'}}}), or if {{{'ini_file_path'}}} contains two dots {{{'..'}}}.
+
+This Just-In-Time concept lets you postpone loading Ini settings that may never be used. The JIT includes only happen when a value in a section is requested that isn't defined. But note that even though the inclusion is triggered by a request for a particular section, the included Ini file may //contain settings for any number of sections//. And in fact, the value requested might not ever be defined.
+
+This means that one could set up special sections designed just to trigger these includes, e.g.,
+
+{{{
+    [jit1]
+    {JIT:include1.ini}
+    [jit2]
+    {JIT:include2.ini}
+}}}
+
+The program could then call {{{get( jit1 => 'dummy' )}}} to read in the {{{include1.ini}}} file (which might not define 'dummy' anywhere), and similarly, call {{{get( jit2 => 'dummy' )}}} to read in {{{include2.ini}}}. These included files may then define anything you want, including more JIT includes.
+
+Finally, a section may define multiple JIT includes. When a value is requested that isn't defined, each JIT include file is included until the requested value is found. Any JIT includes that didn't get included in that round may still be included later.
+
+As with {{{'{INCLUDE:...}'}}} a particular file will only be included once, regardless of how many times it is given in an INCLUDE or JIT template.
 
 !!!{FILE:file_path}
 The {{{'{FILE:file_path}'}}} template is expanded inside double-quoted values and when you call {{{get_expanded()}}} and {{{get_interpolated()}}}. It replaces the template with the contents of {{{'include_root/file_path'}}}. It croaks if the file cannot be opened. It also croaks if {{{$self->include_root()}}} is not set (or is set to {{{'/'}}}), or if {{{'file_path'}}} contains two dots {{{'..'}}}.
@@ -1782,7 +1818,7 @@ Config::Ini, Config::Ini::Edit Config::Ini::Quote, Config::~IniFiles, Config:: .
 Brad Baxter, <bmb@mail.libs.uga.edu>
 
 !COPYRIGHT AND LICENSE
-Copyright (C) 2010 by Brad Baxter
+Copyright (C) 2011 by Brad Baxter
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.8.7 or, at your option, any later version of Perl 5 you may have available.
 

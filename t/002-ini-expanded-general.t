@@ -2,7 +2,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 66;
+use Test::More tests => 67;
 use Config::Ini::Expanded;
 
 my $ini_data = do{ local $/; <DATA> };
@@ -255,6 +255,23 @@ Attributes_passed: {
         is( $ini->_attr( $attr ), $nondefaults{ $attr },
             "_attr( $attr )" );
     }
+}
+
+Heredoc_Bugfix: {
+
+    # before the fix, this was seen as
+    # "name = This is a" = {test
+    # and was an unterminated heredoc
+    # after the fix, it's DWIM, i.e.,
+    # "name" = "This is a = {test"
+
+    my $string = <<__;
+[section]
+name = This is a = {test
+__
+
+    my $ini = Config::Ini::Expanded->new( string => $string );
+    ok( $ini, "heredoc bugfix, new() didn't die" );
 }
 
 

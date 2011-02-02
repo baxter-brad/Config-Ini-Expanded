@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.12
+VERSION: 1.13
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.12';
+our $VERSION = '1.13';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -247,7 +247,12 @@ sub init {
         }
 
         # [section]
-        if( /^ \[ ( [^\]]* ) \] ( \s* [#;] .* \s* )? /x ) {
+
+        # (excluding {} because of Config::Ini::Expanded's
+        # expansion syntax {INI:section:name} -- if section
+        # contains {}, it's confusing for the code)
+
+        if( /^ \[ ( [^{}\]]* ) \] ( \s* [#;] .* \s* )? /x ) {
             $section    = $1;
             my $comment = $2;
             $self->_autovivify( $section );
@@ -264,7 +269,7 @@ sub init {
         # Note: name = {xyz} <<xyz>> must not be seen as a heredoc
         elsif(
             /^ \s* ($requoted) (\s* [=:] \s*) (<<|{) \s* ([^}>] *?) \s* $/xo or
-            /^ \s* (.+?)       (\s* [=:] \s*) (<<|{) \s* ([^}>] *?) \s* $/x  ) {
+            /^ \s* ([^=:]+?)   (\s* [=:] \s*) (<<|{) \s* ([^}>] *?) \s* $/x  ) {
             $name            = $1;
             $vattr{'equals'} = $2;
             my $style        = $3;
@@ -410,7 +415,7 @@ sub init {
         }
 
         # name = value
-        elsif( /^ \s* (.+?) (\s* [=:] \s*) (.*) $/x ) {
+        elsif( /^ \s* ([^=:]+?) (\s* [=:] \s*) (.*) $/x ) {
             $name            = $1;
             $vattr{'equals'} = $2;
             $value           = $3;  # may contain comment

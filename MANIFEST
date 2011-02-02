@@ -34,8 +34,8 @@ t/210-ini-expanded-attr.t
 t/211-ini-expanded-vattr.t
 t/212-ini-expanded-accessors.t
 t/213-ini-expanded-inherits.t
-t/214-ini-expanded-include.t
-t/215-ini-expanded-expands.t
+t/214-ini-expanded-expands.t
+t/215-ini-expanded-include.t
 t/216-ini-expanded-no_inherit.t
 t/217-ini-expanded-no_override.t
 t/301-ini-expanded-quote.t
