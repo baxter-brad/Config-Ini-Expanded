@@ -20,13 +20,13 @@ title = Institutions/Databases Report
 institutions = <<:json
 [
     {
-        instname: "Institution Name",
-        instcode: "Institution Code",
-        date:     "Institution Date",
-        counts: [
+        "instname": "Institution Name",
+        "instcode": "Institution Code",
+        "date":     "Institution Date",
+        "counts": [
             {
-                stattype: "Search",
-                commacount: "10"
+                "stattype": "Search",
+                "commacount": "10"
             }
         ]
     }
@@ -36,12 +36,12 @@ institutions = <<:json
 databases = <<:json
 [
     {
-        dbsname: "Database Name",
-        dbscode: "Database Code",
-        counts: [
+        "dbsname": "Database Name",
+        "dbscode": "Database Code",
+        "counts": [
             {
-                stattype: "Search",
-                commacount: "10"
+                "stattype": "Search",
+                "commacount": "10"
             }
         ]
     }

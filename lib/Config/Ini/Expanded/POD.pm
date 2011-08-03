@@ -42,7 +42,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.13
+VERSION: 1.14
 
 =head1 DESCRIPTION
 
@@ -340,19 +340,18 @@ regular expression are optional.  You may also use matching quotes
 instead, e.g., C<:parse('\s')>.
 
  name = <<:json
- { a: 1, b: 2, c: 3 }
+ { "a": 1, "b": 2, "c": 3 }
  <<
 
 Given the above C<':json'> example, C<< $ini->get('name') >> should
-return a hashref.  Note that we accept bare hash keys
-(C<$JSON::BareKey=1;>).
+return a hashref.  Note that we NO LONGER accept bare hash keys.
 
 Modifiers must follow the heredoc characters C<< '<<' >> (or C<'{'>).
 If there is a heredoc tag, e.g., C<'EOT'> below, the modifiers should
 follow it, too.
 
  name = <<EOT:json
- { a: 1, b: 2, c: 3 }
+ { "a": 1, "b": 2, "c": 3 }
  EOT
 
 If you want to use single or double quotes, surround the heredoc tag

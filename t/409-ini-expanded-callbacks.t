@@ -18,13 +18,13 @@ BEGIN {
 html = <b>This</b> is a <i>test</i>.
 
 html_loop = <<:json
-[ { data: "<b>This</b> is a <i>test</i>." } ]
+[ { "data": "<b>This</b> is a <i>test</i>." } ]
 <<
 
 url = This is a test.
 
 url_loop = <<:json
-[ { data: "This is a test." } ]
+[ { "data": "This is a test." } ]
 <<
 
 [tests]

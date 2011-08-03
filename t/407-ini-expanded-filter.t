@@ -17,115 +17,115 @@ BEGIN {
 
 sales = <<:json
 [ {
-    columns: [
-        { name: "Bill  " },
-        { name: "Martha" },
-        { name: "Eva   " },
-        { name: "Totals" }
+    "columns": [
+        { "name": "Bill  " },
+        { "name": "Martha" },
+        { "name": "Eva   " },
+        { "name": "Totals" }
         ],
-    periods: [
-        { name: "Jan", period_sales: [
-            { name: "Red  ", color_sales: [
-                { name: "Bill  ", sales: "     3" },
-                { name: "Martha", sales: "    14" },
-                { name: "Eva   ", sales: "    21" },
-                { name: "Totals", sales: "    38" }
+    "periods": [
+        { "name": "Jan", "period_sales": [
+            { "name": "Red  ", "color_sales": [
+                { "name": "Bill  ", "sales": "     3" },
+                { "name": "Martha", "sales": "    14" },
+                { "name": "Eva   ", "sales": "    21" },
+                { "name": "Totals", "sales": "    38" }
                 ] },
-            { name: "Blue ", color_sales: [
-                { name: "Bill  ", sales: "     0" },
-                { name: "Martha", sales: "   247" },
-                { name: "Eva   ", sales: "    -3" },
-                { name: "Totals", sales: "   244" }
+            { "name": "Blue ", "color_sales": [
+                { "name": "Bill  ", "sales": "     0" },
+                { "name": "Martha", "sales": "   247" },
+                { "name": "Eva   ", "sales": "    -3" },
+                { "name": "Totals", "sales": "   244" }
                 ] },
-            { name: "Green", color_sales: [
-                { name: "Bill  ", sales: "   101" },
-                { name: "Martha", sales: "     0" },
-                { name: "Eva   ", sales: "    10" },
-                { name: "Totals", sales: "   111" }
+            { "name": "Green", "color_sales": [
+                { "name": "Bill  ", "sales": "   101" },
+                { "name": "Martha", "sales": "     0" },
+                { "name": "Eva   ", "sales": "    10" },
+                { "name": "Totals", "sales": "   111" }
                 ] },
-            { name: "Total", color_sales: [
-                { name: "Bill  ", sales: "   104" },
-                { name: "Martha", sales: "   261" },
-                { name: "Eva   ", sales: "    28" },
-                { name: "Totals", sales: "   393" }
+            { "name": "Total", "color_sales": [
+                { "name": "Bill  ", "sales": "   104" },
+                { "name": "Martha", "sales": "   261" },
+                { "name": "Eva   ", "sales": "    28" },
+                { "name": "Totals", "sales": "   393" }
                 ] }
             ] },
-        { name: "Feb", period_sales: [
-            { name: "Red  ", color_sales: [
-                { name: "Bill  ", sales: "    48" },
-                { name: "Martha", sales: "   106" },
-                { name: "Eva   ", sales: "     0" },
-                { name: "Totals", sales: "   154" }
+        { "name": "Feb", "period_sales": [
+            { "name": "Red  ", "color_sales": [
+                { "name": "Bill  ", "sales": "    48" },
+                { "name": "Martha", "sales": "   106" },
+                { "name": "Eva   ", "sales": "     0" },
+                { "name": "Totals", "sales": "   154" }
                 ] },
-            { name: "Blue ", color_sales: [
-                { name: "Bill  ", sales: "    83" },
-                { name: "Martha", sales: "     2" },
-                { name: "Eva   ", sales: "     8" },
-                { name: "Totals", sales: "    93" }
+            { "name": "Blue ", "color_sales": [
+                { "name": "Bill  ", "sales": "    83" },
+                { "name": "Martha", "sales": "     2" },
+                { "name": "Eva   ", "sales": "     8" },
+                { "name": "Totals", "sales": "    93" }
                 ] },
-            { name: "Green", color_sales: [
-                { name: "Bill  ", sales: "    -4" },
-                { name: "Martha", sales: "    18" },
-                { name: "Eva   ", sales: "    40" },
-                { name: "Totals", sales: "    54" }
+            { "name": "Green", "color_sales": [
+                { "name": "Bill  ", "sales": "    -4" },
+                { "name": "Martha", "sales": "    18" },
+                { "name": "Eva   ", "sales": "    40" },
+                { "name": "Totals", "sales": "    54" }
                 ] },
-            { name: "Total", color_sales: [
-                { name: "Bill  ", sales: "   127" },
-                { name: "Martha", sales: "   126" },
-                { name: "Eva   ", sales: "    48" },
-                { name: "Totals", sales: "   201" }
+            { "name": "Total", "color_sales": [
+                { "name": "Bill  ", "sales": "   127" },
+                { "name": "Martha", "sales": "   126" },
+                { "name": "Eva   ", "sales": "    48" },
+                { "name": "Totals", "sales": "   201" }
                 ] }
             ] },
-        { name: "Mar", period_sales: [
-            { name: "Red  ", color_sales: [
-                { name: "Bill  ", sales: "    80" },
-                { name: "Martha", sales: "    20" },
-                { name: "Eva   ", sales: "     0" },
-                { name: "Totals", sales: "   100" }
+        { "name": "Mar", "period_sales": [
+            { "name": "Red  ", "color_sales": [
+                { "name": "Bill  ", "sales": "    80" },
+                { "name": "Martha", "sales": "    20" },
+                { "name": "Eva   ", "sales": "     0" },
+                { "name": "Totals", "sales": "   100" }
                 ] },
-            { name: "Blue ", color_sales: [
-                { name: "Bill  ", sales: "    -2" },
-                { name: "Martha", sales: "    18" },
-                { name: "Eva   ", sales: "    20" },
-                { name: "Totals", sales: "    36" }
+            { "name": "Blue ", "color_sales": [
+                { "name": "Bill  ", "sales": "    -2" },
+                { "name": "Martha", "sales": "    18" },
+                { "name": "Eva   ", "sales": "    20" },
+                { "name": "Totals", "sales": "    36" }
                 ] },
-            { name: "Green", color_sales: [
-                { name: "Bill  ", sales: "     4" },
-                { name: "Martha", sales: "     8" },
-                { name: "Eva   ", sales: "     6" },
-                { name: "Totals", sales: "    18" }
+            { "name": "Green", "color_sales": [
+                { "name": "Bill  ", "sales": "     4" },
+                { "name": "Martha", "sales": "     8" },
+                { "name": "Eva   ", "sales": "     6" },
+                { "name": "Totals", "sales": "    18" }
                 ] },
-            { name: "Total", color_sales: [
-                { name: "Bill  ", sales: "    82" },
-                { name: "Martha", sales: "    46" },
-                { name: "Eva   ", sales: "    26" },
-                { name: "Totals", sales: "   154" }
+            { "name": "Total", "color_sales": [
+                { "name": "Bill  ", "sales": "    82" },
+                { "name": "Martha", "sales": "    46" },
+                { "name": "Eva   ", "sales": "    26" },
+                { "name": "Totals", "sales": "   154" }
                 ] }
             ] },
-        { name: "Q1 ", period_sales: [
-            { name: "Red  ", color_sales: [
-                { name: "Bill  ", sales: "   131" },
-                { name: "Martha", sales: "   140" },
-                { name: "Eva   ", sales: "    21" },
-                { name: "Totals", sales: "   292" }
+        { "name": "Q1 ", "period_sales": [
+            { "name": "Red  ", "color_sales": [
+                { "name": "Bill  ", "sales": "   131" },
+                { "name": "Martha", "sales": "   140" },
+                { "name": "Eva   ", "sales": "    21" },
+                { "name": "Totals", "sales": "   292" }
                 ] },
-            { name: "Blue ", color_sales: [
-                { name: "Bill  ", sales: "    81" },
-                { name: "Martha", sales: "   267" },
-                { name: "Eva   ", sales: "    25" },
-                { name: "Totals", sales: "   373" }
+            { "name": "Blue ", "color_sales": [
+                { "name": "Bill  ", "sales": "    81" },
+                { "name": "Martha", "sales": "   267" },
+                { "name": "Eva   ", "sales": "    25" },
+                { "name": "Totals", "sales": "   373" }
                 ] },
-            { name: "Green", color_sales: [
-                { name: "Bill  ", sales: "   101" },
-                { name: "Martha", sales: "    26" },
-                { name: "Eva   ", sales: "    56" },
-                { name: "Totals", sales: "   183" }
+            { "name": "Green", "color_sales": [
+                { "name": "Bill  ", "sales": "   101" },
+                { "name": "Martha", "sales": "    26" },
+                { "name": "Eva   ", "sales": "    56" },
+                { "name": "Totals", "sales": "   183" }
                 ] },
-            { name: "Total", color_sales: [
-                { name: "Bill  ", sales: "   313" },
-                { name: "Martha", sales: "   433" },
-                { name: "Eva   ", sales: "   102" },
-                { name: "Totals", sales: "   848" }
+            { "name": "Total", "color_sales": [
+                { "name": "Bill  ", "sales": "   313" },
+                { "name": "Martha", "sales": "   433" },
+                { "name": "Eva   ", "sales": "   102" },
+                { "name": "Totals", "sales": "   848" }
                 ] }
             ] }
         ]

@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.13
+VERSION: 1.14
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.13';
+our $VERSION = '1.14';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -62,9 +62,6 @@ use Config::Ini::Edit;
 use Config::Ini::Quote ':all';
 use Text::ParseWords;
 use JSON;
-$JSON::Pretty  = 1;
-$JSON::BareKey = 1;  # *accepts* bare keys
-$JSON::KeySort = 1;
 
 our $encoding      = '';    # for new()/init(), {FILE:...}
 our $keep_comments = 0;     # boolean, user may set to 1
@@ -498,8 +495,17 @@ sub init {
                 parse_line( $parse, 0, $value ) );
         }
         else {
-            $value = jsonToObj $value if $json;
+            # 'decode' is 'from json text to perl ref'
 
+            # it is expected that the $value has already
+            # been Encode::decode'd into perl's internal
+            # character encoding (i.e., utf8), and that
+            # this is what JSON::decode is expecting
+
+            if( $json ) {
+                my $jobj = JSON::->new;
+                $value = $jobj->decode( $value );
+            }
             $self->add( $section, $name, $value );
         }
 

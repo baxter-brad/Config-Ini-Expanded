@@ -4,8 +4,6 @@ use strict;
 
 use Test::More tests => 12;
 use JSON;
-$JSON::Pretty++;
-$JSON::ConvBlessed++;
 
 use Config::Ini::Expanded;
 
@@ -66,5 +64,5 @@ name = {''
 value
 }
 name = <<:json
-{ a: 1, b: 2 }
+{ "a": 1, "b": 2 }
 <<

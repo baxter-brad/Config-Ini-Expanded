@@ -18,41 +18,41 @@ BEGIN {
 # define the array of hashes in ini data (just because)
 forest = <<:json
 [
-  { tree:      "trident maple",
-    order:     "sapindales",
-    family:    "aceraceae",
-    genus:     "acer",
-    species:   "acer buergerianum"
+  { "tree":      "trident maple",
+    "order":     "sapindales",
+    "family":    "aceraceae",
+    "genus":     "acer",
+    "species":   "acer buergerianum"
   },
-  { tree:      "southern live oak",
-    order:     "fagales",
-    family:    "fagaceae",
-    genus:     "quercus",
-    species:   "quercus virginiana"
+  { "tree":      "southern live oak",
+    "order":     "fagales",
+    "family":    "fagaceae",
+    "genus":     "quercus",
+    "species":   "quercus virginiana"
   },
-  { tree:      "longleaf pine",
-    order:     "pinales",
-    family:    "pinaceae",
-    genus:     "pinus",
-    species:   "pinus palustris"
+  { "tree":      "longleaf pine",
+    "order":     "pinales",
+    "family":    "pinaceae",
+    "genus":     "pinus",
+    "species":   "pinus palustris"
   },
-  { tree:      "maidenhair tree",
-    order:     "ginkgoales",
-    family:    "ginkgoaceae",
-    genus:     "ginkgo",
-    species:   "ginkgo biloba"
+  { "tree":      "maidenhair tree",
+    "order":     "ginkgoales",
+    "family":    "ginkgoaceae",
+    "genus":     "ginkgo",
+    "species":   "ginkgo biloba"
   },
-  { tree:      "american beech",
-    order:     "fagales",
-    family:    "fagaceae",
-    genus:     "fagus",
-    species:   "fagus grandifolia"
+  { "tree":      "american beech",
+    "order":     "fagales",
+    "family":    "fagaceae",
+    "genus":     "fagus",
+    "species":   "fagus grandifolia"
   },
-  { tree:      "american chestnut",
-    order:     "fagales",
-    family:    "fagaceae",
-    genus:     "castanea",
-    species:   "castanea dentata"
+  { "tree":      "american chestnut",
+    "order":     "fagales",
+    "family":    "fagaceae",
+    "genus":     "castanea",
+    "species":   "castanea dentata"
   }
 ]
 <<

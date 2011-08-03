@@ -22,28 +22,28 @@ ini3 = Ini3
 loop1 = <<:json
 [
     {
-        code: "code1",
-        name: "name2",
-        counts: [
-            { type: "Search",   count: "10" },
-            { type: "Browse",   count: "20" },
-            { type: "Fulltext", count: "30" }
+        "code": "code1",
+        "name": "name2",
+        "counts": [
+            { "type": "Search",   "count": "10" },
+            { "type": "Browse",   "count": "20" },
+            { "type": "Fulltext", "count": "30" }
         ]
     },
     {
-        code: "code2",
-        name: "name2",
-        counts: [
-            { type: "Search",   count: "40" },
-            { type: "Fulltext", count: "50" }
+        "code": "code2",
+        "name": "name2",
+        "counts": [
+            { "type": "Search",   "count": "40" },
+            { "type": "Fulltext", "count": "50" }
         ]
     },
     {
-        code: "code3",
-        name: "name3",
-        counts: [
-            { type: "Browse",   count: "60" },
-            { type: "Fulltext", count: "70" }
+        "code": "code3",
+        "name": "name3",
+        "counts": [
+            { "type": "Browse",   "count": "60" },
+            { "type": "Fulltext", "count": "70" }
         ]
     }
 ]
@@ -52,28 +52,28 @@ loop1 = <<:json
 loop2 = <<:json
 [
     {
-        code: "code1",
-        name: "name2",
-        counts: [
-            { type: "Search",   count: "10" },
-            { type: "Browse",   count: "20" },
-            { type: "Fulltext", count: "30" }
+        "code": "code1",
+        "name": "name2",
+        "counts": [
+            { "type": "Search",   "count": "10" },
+            { "type": "Browse",   "count": "20" },
+            { "type": "Fulltext", "count": "30" }
         ]
     },
     {
-        code: "code2",
-        name: "name2",
-        counts: [
-            { type: "Search",   count: "40" },
-            { type: "Fulltext", count: "50" }
+        "code": "code2",
+        "name": "name2",
+        "counts": [
+            { "type": "Search",   "count": "40" },
+            { "type": "Fulltext", "count": "50" }
         ]
     },
     {
-        code: "code3",
-        name: "name3",
-        counts: [
-            { type: "Browse",   count: "60" },
-            { type: "Fulltext", count: "70" }
+        "code": "code3",
+        "name": "name3",
+        "counts": [
+            { "type": "Browse",   "count": "60" },
+            { "type": "Fulltext", "count": "70" }
         ]
     }
 ]

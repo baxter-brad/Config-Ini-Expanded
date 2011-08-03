@@ -19,19 +19,19 @@ BEGIN {
 [to_test]
 
 loop_deep = <<:json
-[{ too_deep: "{LOOP:loop_deep}{LVAR:too_deep}{END_LOOP:loop_deep}" }]
+[{ "too_deep": "{LOOP:loop_deep}{LVAR:too_deep}{END_LOOP:loop_deep}" }]
 <<
 
 loop_var_lvar = <<:json
-[{ var_lvar: "{VAR:var_lvar}" }]
+[{ "var_lvar": "{VAR:var_lvar}" }]
 <<
 
 loop_ini_lvar = <<:json
-[{ ini_lvar: "{INI:to_test:ini_lvar}" }]
+[{ "ini_lvar": "{INI:to_test:ini_lvar}" }]
 <<
 
 loop_lvar = <<:json
-[{ lvar: "{LVAR:lvar}" }]
+[{ "lvar": "{LVAR:lvar}" }]
 <<
 
 var      = {VAR:var}

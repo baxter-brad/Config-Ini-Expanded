@@ -5,8 +5,13 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME              => 'Config::Ini::Expanded',
     VERSION_FROM      => 'lib/Config/Ini/Expanded.pm', # finds $VERSION
-    PREREQ_PM         => {}, # e.g., Module::Name => 1.1
+    PREREQ_PM         => {
+        'JSON'               => 2.51,
+        'Config::Ini'        => 1.04,
+        'Config::Ini::Edit'  => 1.04,
+        'Config::Ini::Quote' => 1.01,
+    }, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'lib/Config/Ini/Expanded.pm', # retrieve abstract from module
-       AUTHOR         => 'Brad Baxter <bmb@galib.uga.edu>') : ()),
+       AUTHOR         => 'Brad Baxter <bbaxter@cpan.org>') : ()),
 );

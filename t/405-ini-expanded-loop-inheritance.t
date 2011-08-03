@@ -18,134 +18,170 @@ BEGIN {
 # define the array of hashes in ini data (just because)
 forest = <<:json
 [
-  { tree:      "trident maple",
-    order:     "sapindales",
-    family:    "aceraceae",
-    genus:     "acer",
-    species:   "acer buergerianum"
+  { "tree":      "trident maple",
+    "order":     "sapindales",
+    "family":    "aceraceae",
+    "genus":     "acer",
+    "species":   "acer buergerianum"
   },
-  { tree:      "southern live oak",
-    order:     "fagales",
-    family:    "fagaceae",
-    genus:     "quercus",
-    species:   "quercus virginiana"
+  { "tree":      "southern live oak",
+    "order":     "fagales",
+    "family":    "fagaceae",
+    "genus":     "quercus",
+    "species":   "quercus virginiana"
   },
-  { tree:      "longleaf pine",
-    order:     "pinales",
-    family:    "pinaceae",
-    genus:     "pinus",
-    species:   "pinus palustris"
+  { "tree":      "longleaf pine",
+    "order":     "pinales",
+    "family":    "pinaceae",
+    "genus":     "pinus",
+    "species":   "pinus palustris"
   },
-  { tree:      "maidenhair tree",
-    order:     "ginkgoales",
-    family:    "ginkgoaceae",
-    genus:     "ginkgo",
-    species:   "ginkgo biloba"
+  { "tree":      "maidenhair tree",
+    "order":     "ginkgoales",
+    "family":    "ginkgoaceae",
+    "genus":     "ginkgo",
+    "species":   "ginkgo biloba"
   },
-  { tree:      "american beech",
-    order:     "fagales",
-    family:    "fagaceae",
-    genus:     "fagus",
-    species:   "fagus grandifolia"
+  { "tree":      "american beech",
+    "order":     "fagales",
+    "family":    "fagaceae",
+    "genus":     "fagus",
+    "species":   "fagus grandifolia"
   },
-  { tree:      "american chestnut",
-    order:     "fagales",
-    family:    "fagaceae",
-    genus:     "castanea",
-    species:   "castanea dentata"
+  { "tree":      "american chestnut",
+    "order":     "fagales",
+    "family":    "fagaceae",
+    "genus":     "castanea",
+    "species":   "castanea dentata"
   },
-  { tree:      "chinese juniper",
-    species:   "juniperus chinensis",
-    genus:     "juniperus",
-    family:    "cupressaceae",
-    order:     "pinales"
+  { "tree":      "chinese juniper",
+    "species":   "juniperus chinensis",
+    "genus":     "juniperus",
+    "family":    "cupressaceae",
+    "order":     "pinales"
   },
-  { tree:      "florida yew",
-    species:   "taxus floridana",
-    genus:     "taxus",
-    family:    "taxaceae",
-    order:     "pinales"
+  { "tree":      "florida yew",
+    "species":   "taxus floridana",
+    "genus":     "taxus",
+    "family":    "taxaceae",
+    "order":     "pinales"
   },
-  { tree:      "joshua tree",
-    species:   "yucca brevifolia",
-    genus:     "yucca",
-    family:    "agavaceae",
-    order:     "asparagales"
+  { "tree":      "joshua tree",
+    "species":   "yucca brevifolia",
+    "genus":     "yucca",
+    "family":    "agavaceae",
+    "order":     "asparagales"
   }
 ]
 <<
 
 order = <<:json
 [
-{ order_name: "Asparagales",
-  order_family: [  
-  { family_name: "Agavaceae",
-    family_genus: [
-    { genus_name: "Yucca",
-      genus_species: [
-        { tree: "joshua tree", species: "yucca brevifolia", genus: "yucca", family: "agavaceae", order: "asparagales" }
+{ "order_name": "Asparagales",
+  "order_family": [  
+  { "family_name": "Agavaceae",
+    "family_genus": [
+    { "genus_name": "Yucca",
+      "genus_species": [
+        { "tree": "joshua tree",
+          "species": "yucca brevifolia",
+          "genus": "yucca",
+          "family": "agavaceae",
+          "order": "asparagales" }
       ] }
     ] }
   ] },
-{ order_name: "Fagales",
-  order_family: [
-  { family_name: "Fagaceae",
-    family_genus: [
-    { genus_name: "Castanea",
-      genus_species: [
-      { tree: "american chestnut", order: "fagales", family: "fagaceae", genus: "castanea", species: "castanea dentata" }
+{ "order_name": "Fagales",
+  "order_family": [
+  { "family_name": "Fagaceae",
+    "family_genus": [
+    { "genus_name": "Castanea",
+      "genus_species": [
+      { "tree": "american chestnut",
+        "order": "fagales",
+        "family": "fagaceae",
+        "genus": "castanea",
+        "species": "castanea dentata" }
     ] },
-    { genus_name: "Fagus",
-      genus_species: [
-      { tree: "american beech", order: "fagales", family: "fagaceae", genus: "fagus", species: "fagus grandifolia" }
+    { "genus_name": "Fagus",
+      "genus_species": [
+      { "tree": "american beech",
+        "order": "fagales",
+        "family": "fagaceae",
+        "genus": "fagus",
+        "species": "fagus grandifolia" }
     ] },
-    { genus_name: "Quercus",
-      genus_species: [
-      { tree: "southern live oak", order: "fagales", family: "fagaceae", genus: "quercus", species: "quercus virginiana" }
+    { "genus_name": "Quercus",
+      "genus_species": [
+      { "tree": "southern live oak",
+        "order": "fagales",
+        "family": "fagaceae",
+        "genus": "quercus",
+        "species": "quercus virginiana" }
       ] }
     ] }
   ] },
-{ order_name: "Ginkgoales",
-  order_family: [
-  { family_name: "Ginkgoaceae",
-    family_genus: [
-    { genus_name: "Gingkgo",
-      genus_species: [
-      { tree: "maidenhair tree", order: "ginkgoales", family: "ginkgoaceae", genus: "ginkgo", species: "ginkgo biloba" }
+{ "order_name": "Ginkgoales",
+  "order_family": [
+  { "family_name": "Ginkgoaceae",
+    "family_genus": [
+    { "genus_name": "Gingkgo",
+      "genus_species": [
+      { "tree": "maidenhair tree",
+        "order": "ginkgoales",
+        "family": "ginkgoaceae",
+        "genus": "ginkgo",
+        "species": "ginkgo biloba" }
       ] }
     ] }
   ] },
-{ order_name: "Pinales",
-  order_family: [
-  { family_name: "Cupressaceae",
-    family_genus: [
-    { genus_name: "Juniperus",
-      genus_species: [
-      { tree: "chinese juniper", species: "juniperus chinensis", genus: "juniperus", family: "cupressaceae", order: "pinales" }
+{ "order_name": "Pinales",
+  "order_family": [
+  { "family_name": "Cupressaceae",
+    "family_genus": [
+    { "genus_name": "Juniperus",
+      "genus_species": [
+      { "tree": "chinese juniper",
+        "species": "juniperus chinensis",
+        "genus": "juniperus",
+        "family": "cupressaceae",
+        "order": "pinales" }
       ] }
     ] },
-  { family_name: "Pinaceae",
-    family_genus: [
-    { genus_name: "Pinus",
-      genus_species: [
-      { tree: "longleaf pine", order: "pinales", family: "pinaceae", genus: "pinus", species: "pinus palustris" }
+  { "family_name": "Pinaceae",
+    "family_genus": [
+    { "genus_name": "Pinus",
+      "genus_species": [
+      { "tree": "longleaf pine",
+        "order": "pinales",
+        "family": "pinaceae",
+        "genus": "pinus",
+        "species": "pinus palustris" }
       ] }
     ] },
-  { family_name: "Taxaceae",
-    family_genus: [
-    { genus_name: "Taxus",
-      genus_species: [
-      { tree: "florida yew", species: "taxus floridana", genus: "taxus", family: "taxaceae", order: "pinales" }
+  { "family_name": "Taxaceae",
+    "family_genus": [
+    { "genus_name": "Taxus",
+      "genus_species": [
+      { "tree": "florida yew",
+        "species": "taxus floridana",
+        "genus": "taxus",
+        "family": "taxaceae",
+        "order": "pinales" }
       ] }
     ] }
   ] },
-{ order_name: "Spapindales",
-  order_family: [
-  { family_name: "Aceraceae",
-    family_genus: [
-    { genus_name: "Acer",
-      genus_species: [
-      { tree: "trident maple", order: "sapindales", family: "aceraceae", genus: "acer", species: "acer buergerianum" }
+{ "order_name": "Spapindales",
+  "order_family": [
+  { "family_name": "Aceraceae",
+    "family_genus": [
+    { "genus_name": "Acer",
+      "genus_species": [
+      { "tree": "trident maple",
+        "order": "sapindales",
+        "family": "aceraceae",
+        "genus": "acer",
+        "species": "acer buergerianum" }
       ] }
     ] }
   ] }
@@ -256,11 +292,11 @@ Spapindales, Aceraceae, Acer, Tree: trident maple, Species: acer buergerianum, G
 
 grandparent = <<:json
 [
-  { name: "grandparent",
-    parent: [
-    { name: "parent",
-      child: [
-      { name: "self" }
+  { "name": "grandparent",
+    "parent": [
+    { "name": "parent",
+      "child": [
+      { "name": "self" }
       ]
     }
     ]
@@ -270,11 +306,11 @@ grandparent = <<:json
 
 grandparent = <<:json
 [
-  { Name: "grandparent",
-    parent: [
-    { Name: "parent",
-      child: [
-      { name: "self" }
+  { "Name": "grandparent",
+    "parent": [
+    { "Name": "parent",
+      "child": [
+      { "name": "self" }
       ]
     }
     ]
@@ -284,11 +320,11 @@ grandparent = <<:json
 
 grandparent = <<:json
 [
-  { NAME: "grandparent",
-    parent: [
-    { Name: "parent",
-      child: [
-      { name: "self" }
+  { "NAME": "grandparent",
+    "parent": [
+    { "Name": "parent",
+      "child": [
+      { "name": "self" }
       ]
     }
     ]
