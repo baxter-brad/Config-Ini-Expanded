@@ -51,6 +51,8 @@ t/408-ini-expanded-filter-pod.t
 t/409-ini-expanded-callbacks.t
 t/410-ini-expanded-permute.t
 t/411-ini-expanded-missing-data.t
+t/412-ini-expanded-loop_alerts.t
+t/413-ini-expanded-array-loops.t
 lib/Config/Ini/Expanded.pm
 lib/Config/Ini/Expanded/POD.pm
 META.yml                                 Module meta-data (added by MakeMaker)

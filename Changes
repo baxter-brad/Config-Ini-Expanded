@@ -1,5 +1,11 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.15 Wed Aug  3 16:46:56 EDT 2011
+    - actually use the instance-level loop_limit and size_limit attribute values
+    - added t/412-ini-expanded-loop_alerts.t
+    - allow loops to be arrays of scalars (vs. arrays of hashes)
+    - added t/413-ini-expanded-array-loops.t
+
 1.14 Tue May  3 09:26:28 EDT 2011
     - for JSON 2.51: changed jsonToObj to from_json and objToJson to to_json
 

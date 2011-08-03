@@ -42,7 +42,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.14
+VERSION: 1.15
 
 =head1 DESCRIPTION
 
@@ -1088,6 +1088,46 @@ things will happen as you intend.  The above explanation attempts to be
 as complete as possible both to explain why things might not happen as
 you intended and to show what is possible (that, e.g., isn't possible
 in HTML::Template).
+
+=head4 Array Loops
+
+Normally, a loop iterates over an array of hashes, which you define
+using set_loop(), e.g.,
+
+ $ini->set_loop( loop1 => [
+      {
+         var1 => 'one fish',
+         var2 => 'two fish',
+      },
+      {
+         var1 => 'red fish',
+         var2 => 'blue fish',
+      },
+ ]);
+
+It is also possible to iterate over an array of scalar values, e.g.,
+
+ $ini->set_loop( fish => [
+     'one fish',
+     'two fish',
+     'red fish',
+     'blue fish',
+ ]);
+
+The above loop is treated as if you had set it as follows (note that
+there is only one key in each hash, and it's the same as the "parent"
+key):
+
+ $ini->set_loop( fish => [
+     { fish => 'one fish'  },
+     { fish => 'two fish'  },
+     { fish => 'red fish'  },
+     { fish => 'blue fish' },
+ ]);
+
+The template syntax for both types of loops is exactly the same, e.g.,
+
+ {LOOP:fish}{LVAR:fish}{END_LOOP:fish}
 
 =head3 {IF/UNLESS_LOOP:loopname}
 

@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.14
+VERSION: 1.15
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.14';
+our $VERSION = '1.15';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -855,6 +855,8 @@ sub expand {
     my ( $self, $value, $section, $name ) = @_;
 
     for( $self->filter() ) { $_->( \$value ) if defined; }
+    my $loop_limit = $self->loop_limit();
+    my $size_limit = $self->size_limit();
 
     my $loops;
     while( 1 ) {  no warnings 'uninitialized';
@@ -1002,6 +1004,9 @@ sub expand {
 sub _expand_if {
     my( $self, $name, $value ) = @_;
 
+    my $loop_limit = $self->loop_limit();
+    my $size_limit = $self->size_limit();
+
     my $loops;
     while( 1 ) {  no warnings 'uninitialized';
 
@@ -1079,6 +1084,9 @@ sub _expand_if {
 
 sub _expand_loop {
     my ( $self, $value, $name, $loop_aref, $contexts, $deep ) = @_;
+
+    my $loop_limit = $self->loop_limit();
+    my $size_limit = $self->size_limit();
 
     # catching deep recursion
     if( ++$deep > $loop_limit ) {
@@ -1224,10 +1232,19 @@ sub _expand_loop {
 
         my $loop_href = $loop_aref->[ $i ];
 
-        croak join ' ' =>
-            "Error: for {LOOP:$name}, '$loop_href' is not",
-            "a hash ref: $name => [ '$loop_href' ]"
-            unless ref $loop_href eq 'HASH';
+        # allow a loop to be an array of scalars instead of an array
+        # of hash refs, so the following would be the equivalent:
+        #
+        # loopx => [ 1, 2, 3 ]
+        # loopx => [ { loopx => 1 }, { loopx => 2 }, { loopx => 3 } ]
+        #
+        # and you would say the following in both cases:
+        #
+        # {LOOP:loopx}{LVAR:loopx}{END_LOOP:loopx}
+
+        unless( ref $loop_href eq 'HASH' ) {
+            $loop_href = { $name => $loop_href };
+        }
 
         $context->{ $name }{ 'href'  } = $loop_href;
         $context->{ $name }{ 'index' } = $i;
