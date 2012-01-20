@@ -2,7 +2,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 6;
+use Test::More tests => 8;
 
 use Config::Ini::Expanded;
 
@@ -15,6 +15,10 @@ is( $ini->get( section1 => 'name1.1' ), 'value1.1',
 
 is( $ini->get( section1 => 'name1.2', 1 ), 'value1.2b',
     'get( section, name, i )' );
+
+my $aref = $ini->get( section => 'name' );
+is( "@$aref", "value1 value2 value3",
+    'get( section, name ) ... scalar context' );
 
 my @values = $ini->get( section2 => 'name2.1' );
 is( "@values", "value2.1\n",
@@ -32,7 +36,18 @@ is( "@values", "value2.3value2.3\n",
 is( "@values", "value2.4 value2.4",
     'get( section, name ) (heredoc :parse)' );
 
+@values = $ini->get( section => 'name' );
+is( "@values", "value1 value2 value3",
+    'get( section, name ) ... list context' );
+
+
 __DATA__
+
+[section]
+name = value1
+name = value2
+name = value3
+
 # Section 1
 
 [section1]

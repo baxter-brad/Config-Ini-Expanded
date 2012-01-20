@@ -18,6 +18,8 @@ size_limit settings.
 
 my $ini;
 my $num_tests;
+my @tests_to_succeed;
+my @tests_to_fail;
 
 BEGIN {
     my $ini_data = <<'_end_ini_';
@@ -41,27 +43,29 @@ loop_deep3 = <<:json
 [{ "too_deep3": "Hello, World." }]
 <<
 
-loop_deep = <<
-{LOOP:loop_deep1}{LVAR:too_deep1}{END_LOOP:loop_deep1}
-<<
+loop_deep = {LOOP:loop_deep1}{LVAR:too_deep1}{END_LOOP:loop_deep1}
 
 # test unless_loop with loop_limit = 2 or size_limit = 20
 
-unless_loop1 = <<
-{UNLESS_LOOP:dummy}{INI:to_test:unless_loop2}{END_UNLESS_LOOP:dummy}
-<<
+unless_loop1 = {UNLESS_LOOP:dummy}{INI:to_test:unless_loop2}{END_UNLESS_LOOP:dummy}
 
-unless_loop2 = <<
-{UNLESS_LOOP:dummy}{INI:to_test:unless_loop3}{END_UNLESS_LOOP:dummy}
-<<
+unless_loop2 = {UNLESS_LOOP:dummy}{INI:to_test:unless_loop3}{END_UNLESS_LOOP:dummy}
 
 unless_loop3 = "Hello, World."
 
-unless_loop = <<
-{UNLESS_LOOP:dummy}{INI:to_test:unless_loop1}{END_UNLESS_LOOP:dummy}
-<<
+unless_loop = {UNLESS_LOOP:dummy}{INI:to_test:unless_loop1}{END_UNLESS_LOOP:dummy}
 
-[tests]
+[tests_to_succeed]
+
+tmpl = {INI:to_test:loop_deep}
+ out = Hello, World.
+ cmt = Okay deep loop;
+
+tmpl = {INI:to_test:unless_loop}
+ out = Hello, World.
+ cmt = Okay unless loop;
+
+[tests_to_fail]
 
 tmpl = {INI:to_test:loop_deep}
  out = Deep recursion alert
@@ -86,8 +90,9 @@ _end_ini_
     $ini = Config::Ini::Expanded->new( string => $ini_data );
 
     # calculate how many tests for Test::More
-    my @tests = $ini->get( tests => 'tmpl' );
-    $num_tests = @tests;
+    @tests_to_succeed = $ini->get( tests_to_succeed => 'tmpl' );
+    @tests_to_fail    = $ini->get( tests_to_fail    => 'tmpl' );
+    $num_tests = @tests_to_succeed + @tests_to_fail;
 }
 
 # Yup, we need another BEGIN block ...
@@ -104,19 +109,32 @@ $ini->set_loop(
         loop_deep3     => $ini->get( to_test => 'loop_deep3'      ),
     );
 
-# these get_expanded() calls are expected to die ...
-for ( 1 .. $num_tests ) {
-    my $occ     = $_ - 1;
+# these get_expanded() calls are expected to succeed ...
+for my $occ ( 0 .. $#tests_to_succeed ) {
 
-    my $llim = $ini->get( tests => 'llim', $occ );
-    my $slim = $ini->get( tests => 'slim', $occ );
+    my $section = 'tests_to_succeed';
+
+    my $output = $ini->get_expanded( $section => 'tmpl', $occ );
+    my $wanted  = $ini->get( $section => 'out', $occ );
+    my $comment = $ini->get( $section => 'cmt', $occ );
+
+    is( $output, $wanted, $comment );
+}
+
+# these get_expanded() calls are expected to die ...
+for my $occ ( 0 .. $#tests_to_fail ) {
+
+    my $section = 'tests_to_fail';
+
+    my $llim = $ini->get( $section => 'llim', $occ );
+    my $slim = $ini->get( $section => 'slim', $occ );
     $ini->loop_limit( $llim );
     $ini->size_limit( $slim );
 
-    eval { $ini->get_expanded( tests => 'tmpl', $occ ) };
+    eval { $ini->get_expanded( $section => 'tmpl', $occ ) };
     my $output  = $@;
-    my $wanted  = $ini->get( tests => 'out', $occ );
-    my $comment = $ini->get( tests => 'cmt', $occ );
+    my $wanted  = $ini->get( $section => 'out', $occ );
+    my $comment = $ini->get( $section => 'cmt', $occ );
 
     like( $output, qr/$wanted/, $comment );
 }

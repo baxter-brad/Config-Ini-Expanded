@@ -38,6 +38,7 @@ t/214-ini-expanded-expands.t
 t/215-ini-expanded-include.t
 t/216-ini-expanded-no_inherit.t
 t/217-ini-expanded-no_override.t
+t/218-ini-expanded-jit.t
 t/301-ini-expanded-quote.t
 t/302-ini-expanded-oddities.t
 t/401-ini-expanded-loops-if-unless.t

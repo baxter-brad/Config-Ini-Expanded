@@ -1,5 +1,20 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.16 Mon Sep 26 19:28:30 EDT 2011
+    - fix bug (in 1.15) where loop_limit/size_limit had no value for null ini objects
+      - e.g., $ini->new() and then $ini->expand( $something ) would likely always fail
+    - fix logic bug in jit processing (skip instead of return)
+      - before this fix, a file with a jit would not inherit
+    - changed what scalar context get()'s return: aref instead of join " "
+      - this is a backwards incompatible change: any scalar context
+        calls to get() (including get_expanded() and get_interpolated())
+        that had been expecting multiple values to be joined with a space
+        will instead get an array ref starting with this version.
+    - changed these tests:
+      - t/006-ini-expanded-pod
+      - t/008-ini-expanded-null-section
+      - t/301-ini-expanded-quote.t
+
 1.15 Wed Aug  3 16:46:56 EDT 2011
     - actually use the instance-level loop_limit and size_limit attribute values
     - added t/412-ini-expanded-loop_alerts.t

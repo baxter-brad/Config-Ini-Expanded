@@ -13,14 +13,16 @@ Null_section: {
     my $ini = Config::Ini::Expanded->new( string => $data );
 
     # get(?)
-    is( $ini->get( 'a' ), "1 alpha", "get(), null section" );
+    is( "@{$ini->get( 'a' )}", "1 alpha", "get(), null section" );
+
     is( $ini->get( 'b' ), 'baker',   "get(), null section" );
     is( $ini->get( 'c' ), 'charlie', "get(), null section" );
     is( $ini->get( 'd' ), 'dog',     "get(), null section" );
     is( $ini->get( 'e' ), 'echo',    "get(), null section" );
 
     # get('',?)
-    is( $ini->get( '', 'a' ), '1 alpha', "get(), null section" );
+    is( "@{$ini->get( '', 'a' )}", '1 alpha', "get(), null section" );
+
     is( $ini->get( '', 'b' ), 'baker',   "get(), null section" );
     is( $ini->get( '', 'c' ), 'charlie', "get(), null section" );
     is( $ini->get( '', 'd' ), 'dog',     "get(), null section" );

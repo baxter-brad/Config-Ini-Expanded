@@ -68,7 +68,7 @@ __
 
 my $ini = Config::Ini::Expanded->new( string => $data );
 
-is( $ini->get( 'name' ), 'value value value',
+is( "@{$ini->get( 'name' )}", 'value value value',
     'simple value ('.__LINE__.')' );
 
 is( $ini->get( section1=>'name1' ), 'value\n',
@@ -99,7 +99,7 @@ is( $ini->get( section3=>'name2' ),
     "\x11\x{2222}\x{3333}",
     'slash \x escapes ('.__LINE__.')' );
 
-is( $ini->get( section4=>'name' ),
+is( "@{$ini->get( section4=>'name' )}",
     "value\n value\n value\n",
     'heredoc simple values ('.__LINE__.')' );
 

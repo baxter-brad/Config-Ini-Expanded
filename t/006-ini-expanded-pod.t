@@ -101,7 +101,7 @@ __
     @sections = $ini->get_sections();
     my $values = $ini->get( 'section', 'name' );
     is( "@sections", 'section', 'syntax, general' );
-    is( $values,
+    is( "@$values",
         'value # this is NOT a comment value value value value value',
         'syntax, general' );
 }

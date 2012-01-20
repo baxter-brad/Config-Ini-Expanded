@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.15
+VERSION: 1.16
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.15';
+our $VERSION = '1.16';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -533,21 +533,29 @@ sub init {
 
 #---------------------------------------------------------------------
 ## $ini->get( $section, $name, $i )
+# note: this is called in scalar context, so for multiple values, we
+# just join them using $", i.e., "@values"
+#
 sub wrap_get {
     my ( $self, $section, $name, $i ) = @_;
 
     my $callbacks = $self->callbacks();
-    return &get unless $callbacks;  # XXX bad idea to use &?
+    unless( $callbacks ) {
+        my @vals = &get;
+        return "@vals";
+    }
 
     my $cb_regx = join '|', keys %$callbacks;
-    return &get unless $name =~ /^($cb_regx)\((.*)\)/;
+    unless( $name =~ /^($cb_regx)\((.*)\)/ ) {
+        my @vals = &get;
+        return "@vals";
+    }
 
     my $callback = $callbacks->{ $1 };
     my $realname =               $2;
 
-    # XXX initially assume wrap_get never wantarray's
-    my $try = $self->get( $section, $realname, $i );
-    return $callback->( $try ) if defined $try;
+    my @vals = $self->get( $section, $realname, $i );
+    return $callback->( "@vals" ) if @vals;
 
     return;
 }
@@ -568,10 +576,10 @@ sub get {
 
         # JIT includes here
 
-        if( my $jit = $self->jit() ) {
-
-            return unless $jit->{ $section }
-                   and  @{$jit->{ $section }};
+        my  $jit;
+        if( $jit = $self->jit() and
+            $jit->{ $section }  and
+          @{$jit->{ $section }} ) {
 
             my $included     = $self->included();
             my $include_root = $self->include_root();
@@ -641,7 +649,7 @@ sub get {
     # Note, if there's just one, it could be a reference
     # (e.g., from :json), which is why we don't just "@$aref" it
 
-    return @$aref == 1 ? $aref->[ 0 ]: "@$aref";
+    return @$aref == 1 ? $aref->[ 0 ]: [ @$aref ];
 }
 
 #---------------------------------------------------------------------
@@ -650,7 +658,7 @@ sub wrap_get_var {
     my ( $self, $var ) = @_;
 
     my $callbacks = $self->callbacks();
-    return &get_var unless $callbacks;  # XXX bad idea to use &?
+    return &get_var unless $callbacks;
 
     my $cb_regx = join '|', keys %$callbacks;
     return &get_var unless $var =~ /^($cb_regx)\((.*)\)/;
@@ -825,11 +833,8 @@ sub get_expanded {
 
     for( @ret ) { $_ = $self->expand( $_, $section, $name ) }
 
-    return  @ret  if wantarray;
-
-    # XXX what about refs? (e.g., :json)
-
-    return "@ret";
+    return @ret if wantarray;
+    return @ret == 1 ? $ret[ 0 ]: \@ret;  # scalar context
 }
 
 #---------------------------------------------------------------------
@@ -855,8 +860,8 @@ sub expand {
     my ( $self, $value, $section, $name ) = @_;
 
     for( $self->filter() ) { $_->( \$value ) if defined; }
-    my $loop_limit = $self->loop_limit();
-    my $size_limit = $self->size_limit();
+    my $loop_limit = $self->loop_limit()||$loop_limit;
+    my $size_limit = $self->size_limit()||$size_limit;
 
     my $loops;
     while( 1 ) {  no warnings 'uninitialized';
@@ -1004,8 +1009,8 @@ sub expand {
 sub _expand_if {
     my( $self, $name, $value ) = @_;
 
-    my $loop_limit = $self->loop_limit();
-    my $size_limit = $self->size_limit();
+    my $loop_limit = $self->loop_limit()||$loop_limit;
+    my $size_limit = $self->size_limit()||$size_limit;
 
     my $loops;
     while( 1 ) {  no warnings 'uninitialized';
@@ -1085,8 +1090,8 @@ sub _expand_if {
 sub _expand_loop {
     my ( $self, $value, $name, $loop_aref, $contexts, $deep ) = @_;
 
-    my $loop_limit = $self->loop_limit();
-    my $size_limit = $self->size_limit();
+    my $loop_limit = $self->loop_limit()||$loop_limit;
+    my $size_limit = $self->size_limit()||$size_limit;
 
     # catching deep recursion
     if( ++$deep > $loop_limit ) {
@@ -1410,10 +1415,7 @@ sub get_interpolated {
     for( @ret ) { $_ = $self->interpolate( $_ ) };
 
     return @ret if wantarray;
-
-    # XXX what about refs? (e.g., :json)
-
-    return "@ret";
+    return @ret == 1 ? $ret[ 0 ]: \@ret;  # scalar context
 }
 
 #---------------------------------------------------------------------
