@@ -1,5 +1,8 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.17 Fri Jan 20 12:23:52 EST 2012
+    - allow for both JSON version 1.xx and version 2.xx
+
 1.16 Mon Sep 26 19:28:30 EDT 2011
     - fix bug (in 1.15) where loop_limit/size_limit had no value for null ini objects
       - e.g., $ini->new() and then $ini->expand( $something ) would likely always fail

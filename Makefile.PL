@@ -6,9 +6,9 @@ WriteMakefile(
     NAME              => 'Config::Ini::Expanded',
     VERSION_FROM      => 'lib/Config/Ini/Expanded.pm', # finds $VERSION
     PREREQ_PM         => {
-        'JSON'               => 2.51,
+        'JSON'               => 1.00,
         'Config::Ini'        => 1.04,
-        'Config::Ini::Edit'  => 1.04,
+        'Config::Ini::Edit'  => 1.06,
         'Config::Ini::Quote' => 1.01,
     }, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005

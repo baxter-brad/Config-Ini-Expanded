@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.16
+VERSION: 1.17
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.16';
+our $VERSION = '1.17';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -483,7 +483,7 @@ sub init {
         $vattr{'comment'} = $comment if $comment;
         $comment = '';
 
-        # Note: this implies :parse or :json, not both ...
+        # Note: this implies that we allow :parse or :json, not both ...
 
         if( $parse ne '' ) {
             $parse = $quote->( $parse, $1 )
@@ -503,8 +503,14 @@ sub init {
             # this is what JSON::decode is expecting
 
             if( $json ) {
-                my $jobj = JSON::->new;
-                $value = $jobj->decode( $value );
+                if( $JSON::VERSION < 2 ) {
+                    $JSON::BareKey = 1;  # *accepts* bare keys
+                    $value = jsonToObj $value;
+                }
+                else {
+                    my $jobj = JSON::->new;
+                    $value = $jobj->decode( $value );
+                }
             }
             $self->add( $section, $name, $value );
         }
