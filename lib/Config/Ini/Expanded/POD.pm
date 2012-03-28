@@ -42,7 +42,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.17
+VERSION: 1.18
 
 =head1 DESCRIPTION
 

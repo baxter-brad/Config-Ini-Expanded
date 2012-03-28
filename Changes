@@ -1,5 +1,11 @@
 Revision history for Perl extension Config::Ini::Expanded.
 
+1.18 Wed Mar 28 14:11:55 EDT 2012
+    - change INCLUDE and JIT to pick up a default "into" section
+    - add "into" parm to new()/init()
+    - add t/219-ini-expanded-include-into.t
+    - add t/220-ini-expanded-jit-into.t
+
 1.17 Fri Jan 20 12:23:52 EST 2012
     - allow for both JSON version 1.xx and version 2.xx
 

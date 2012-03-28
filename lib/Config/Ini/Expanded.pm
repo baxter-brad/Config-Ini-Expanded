@@ -43,7 +43,7 @@ template expansion capabilities.
 
 =head1 VERSION
 
-VERSION: 1.17
+VERSION: 1.18
 
 =head1 See Config::Ini::Expanded::POD.
 
@@ -54,7 +54,7 @@ All of the POD for this module may be found in Config::Ini::Expanded::POD.
 #---------------------------------------------------------------------
 # http://www.dagolden.com/index.php/369/version-numbers-should-be-boring/
 
-our $VERSION = '1.17';
+our $VERSION = '1.18';
 $VERSION = eval $VERSION;
 
 our @ISA = qw( Config::Ini::Edit );
@@ -68,7 +68,7 @@ our $keep_comments = 0;     # boolean, user may set to 1
 our $heredoc_style = '<<';  # for as_string()
 our $interpolates  = 1;     # double-quote interpolations
 our $expands       = 0;     # double-quote expansions
-our $include_root  = '';    # for INCLUDE/FILE expansions
+our $include_root  = '';    # for INCLUDE/JIT/FILE expansions
 our $inherits      = '';    # for inheriting from other configs
 our $no_inherit    = '';    # '' means will inherit anything
 our $no_override   = '';    # '' means can override anything
@@ -154,7 +154,7 @@ use constant VATTR => 2;
 sub init {
     my ( $self, @parms ) = @_;
 
-    my ( $file, $fh, $string, $included );
+    my ( $file, $fh, $string, $included, $into );
     my ( $keep, $style );
     my %parms;
     if( @parms == 1 ) { %parms = ( file => $parms[0] ) }
@@ -163,6 +163,7 @@ sub init {
     $fh       = $parms{'fh'};
     $string   = $parms{'string'};
     $included = $parms{'included'}||$self->included();
+    $into     = $parms{'into'};  # default section name
 
     # see AUTOLOAD() for (almost) parallel list of attributes
     for( qw(
@@ -211,7 +212,7 @@ sub init {
         else { croak "Invalid parms" }
     }
 
-    my $section = '';
+    my $section = $into?$into:'';
     my $name = '';
     my $value;
     my %vattr;
@@ -224,7 +225,7 @@ sub init {
     my $jit;  # just-in-time includes
 
     local *_;
-    while( <$fh> ) {
+    LINE: while( <$fh> ) {
         my $parse   = '';
         my $escape  = '';
         my $json    = '';
@@ -238,9 +239,9 @@ sub init {
 
         # comment or blank line
         if( /^ \s* [#;] /x or /^ \s* $/x ) {
-            next unless $keep_comments;
+            next LINE unless $keep_comments;
             $pending_comments .= $_;
-            next;
+            next LINE;
         }
 
         # [section]
@@ -253,13 +254,13 @@ sub init {
             $section    = $1;
             my $comment = $2;
             $self->_autovivify( $section );
-            next unless $keep_comments;
+            next LINE unless $keep_comments;
             if( $pending_comments ) {
                 $self->set_section_comments( $section, $pending_comments );
                 $pending_comments = '';
             }
             $self->set_section_comment( $section, $comment ) if $comment;
-            next;
+            next LINE;
         }  # if
 
         # <<heredoc
@@ -359,14 +360,17 @@ sub init {
                     $file         =~ m' \.\. 'x;     # file contains '..'
 
             $file =~ s'^ /+ ''x;             # remove leading slash
-            $file = "$include_root/$file";   # put it back
-            next if $included->{ $file }++;  # only include a file once
-                                             # (avoids include loops)
+            my $path = "$include_root/$file";   # put it back
+
+            croak "init(): Loop alert, '[$section]=>{INCLUDE:$file}"
+                if ++$included->{ $path } > $loop_limit;
 
             my $ini = Config::Ini::Expanded->new(
                 include_root => $include_root,
-                file         => $file,
-                included     => $included );
+                file         => $path,
+                included     => $included,
+                into         => $section,
+                );
 
             my @sections = $sections        ?
                 split( /[, ]+/, $sections ) :
@@ -382,7 +386,7 @@ sub init {
                         $ini->get( $section, $name ) );
                 }
             }
-            next;
+            next LINE;
         }
 
         # {JIT:file}
@@ -400,7 +404,7 @@ sub init {
 
             push @{$jit->{ $section }}, $file;
 
-            next;
+            next LINE;
         }
 
         # "name" = value
@@ -438,7 +442,7 @@ sub init {
                 # croak "Section:$section/Name:$name may not be overridden"
                 #     if $Config::Ini::Expanded::die_on_override;
 
-                next;
+                next LINE;
             }
         }
 
@@ -487,13 +491,17 @@ sub init {
 
         if( $parse ne '' ) {
             $parse = $quote->( $parse, $1 )
-                if $parse =~ m{^ ( ['"/] ) .* \1 $}x;
-
-            # this may parse into multiple values
-            $self->add( $section, $name,
-                map { (defined $_) ? $_ : '' }
-                parse_line( $parse, 0, $value ) );
+                if $parse =~ m,^(['"/]).*\1$,;
+            my $i = $i{ $section }{ $name };
+            for my $val ( parse_line( $parse, 0, $value ) ) {
+                $val = '' unless defined $val;
+                $self->add( $section, $name, $val );
+                $self->vattr( $section, $name, $i++,
+                    %vattr ) if %vattr;
+            }
+            $i{ $section }{ $name } += $i - 1;
         }
+
         else {
             # 'decode' is 'from json text to perl ref'
 
@@ -513,11 +521,10 @@ sub init {
                 }
             }
             $self->add( $section, $name, $value );
-        }
 
-        $self->vattr( $section, $name, $i{ $section }{ $name },
-            %vattr ) if %vattr;
-        %vattr = ();
+            $self->vattr( $section, $name, $i{ $section }{ $name },
+                %vattr ) if %vattr;
+        }
 
         if( $pending_comments ) {
             $self->set_comments( $section, $name,
@@ -526,6 +533,7 @@ sub init {
         }
 
         $i{ $section }{ $name }++;
+        %vattr = ();
 
     }  # while (file loop)
 
@@ -585,21 +593,27 @@ sub get {
         my  $jit;
         if( $jit = $self->jit() and
             $jit->{ $section }  and
-          @{$jit->{ $section }} ) {
+          @{$jit->{ $section }} )
+        {
 
             my $included     = $self->included();
             my $include_root = $self->include_root();
 
             # merge include files until we get the value we
             # want or run out of files
+            # note that file aleady has include_root prefix
 
             while( my $file = pop @{$jit->{ $section }} ) {
-                next if $included->{ $file }++;
+
+                croak "init(): Loop alert, '[$section]=>{JIT:$file}"
+                    if ++$included->{ $file } > $loop_limit;
 
                 my $ini = Config::Ini::Expanded->new(
                     include_root => $include_root,
                     file         => $file,
-                    included     => $included );
+                    included     => $included,
+                    into         => $section,
+                    );
 
                 # merge that one into this one
                 # note: we're not keeping comments, attributes,

@@ -16,7 +16,7 @@ This module requires these other modules and libraries:
 
     Carp
     Text::ParseWords
-    JSON from version 2.51
+    JSON from version 1.00
     HTML::Entities
     Config::Ini
     Config::Ini::Edit
